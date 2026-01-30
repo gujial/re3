@@ -56,10 +56,10 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: '3.x'
-      - name: "Use XCode 11 as default (conan-center-index does not provide XCode 12 binaries at the moment)"
+      - name: "Select default Xcode"
         if: startsWith(matrix.os, 'macos')
         run: |
-          sudo xcode-select --switch /Applications/Xcode_11.7.app
+          sudo xcode-select --switch /Applications/Xcode.app
       - name: "Setup conan"
         run: |
           python -m pip install conan
