@@ -25,11 +25,11 @@ jobs:
 #          - os: 'windows-latest'
 #            platform: 'd3d9'
 #            audio: 'miles'
-          - os: 'ubuntu-18.04'
+          - os: 'ubuntu-20.04'
             platform: 'gl3'
             gl3_gfxlib: 'glfw'
             audio: 'openal'
-#          - os: 'ubuntu-18.04'
+#          - os: 'ubuntu-20.04'
 #            platform: 'gl3'
 #            gl3_gfxlib: 'sdl2'
 #            audio: 'openal'
@@ -89,9 +89,6 @@ jobs:
       - name: "Export Playstation 2 CMake toolchain conan recipe"
         run: |
           conan export vendor/librw/cmake/ps2/cmaketoolchain ps2dev-cmaketoolchain/master@
-      - name: "Export librw conan recipe"
-        run: |
-          conan export vendor/librw librw/master@
       - name: "Export Miles SDK conan recipe"
         if: ${{ matrix.audio == 'miles' }}
         run: |
