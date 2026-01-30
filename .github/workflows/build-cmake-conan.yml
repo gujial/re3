@@ -68,7 +68,7 @@ jobs:
           conan config set general.revisions_enabled=1
           conan remote add bincrafters https://bincrafters.jfrog.io/artifactory/api/conan/public-conan
 #          conan remote add madebr_ps2dev https://api.bintray.com/conan/madebr/ps2dev
-      - name: "Add os=playstation2 + gcc.version=3.2 to .conan/settings.yml"
+      - name: "Add os=playstation2 + gcc.version=3.2 + apple-clang.version=17 to .conan/settings.yml"
         shell: python
         run: |
           import os, yaml
@@ -77,6 +77,10 @@ jobs:
           yml["os"]["playstation2"] = None
           yml["compiler"]["gcc"]["version"].append("3.2")
           yml["compiler"]["gcc"]["version"].sort()
+          if "apple-clang" in yml["compiler"]:
+            if "17" not in yml["compiler"]["apple-clang"]["version"]:
+              yml["compiler"]["apple-clang"]["version"].append("17")
+              yml["compiler"]["apple-clang"]["version"].sort()
           yaml.safe_dump(yml, open(settings_path, "w"))
       - name: "Create host profile"
         shell: bash
