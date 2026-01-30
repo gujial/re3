@@ -3,8 +3,6 @@ on:
   pull_request:
   push:
     branches:
-      - master
-      - miami
       - lcs
   release:
     types: published
@@ -114,7 +112,7 @@ jobs:
         run: |
           cpack -C RelWithDebInfo
       - name: "Archive binary package (github artifacts)"
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: "${{ matrix.os }}-${{ matrix.platform }}"
           path: build/*.tar.xz
