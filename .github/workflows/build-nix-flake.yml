@@ -1,0 +1,65 @@
+name: Nix Flake Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - miami
+      - lcs
+  release:
+    types: published
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [re3, re3-vc, re3-lcs]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    
+    - name: Install Nix
+      uses: cachix/install-nix-action@v25
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+    
+    - name: Setup Cachix
+      uses: cachix/cachix-action@v14
+      with:
+        name: re3
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        skipPush: ${{ secrets.CACHIX_AUTH_TOKEN == '' }}
+    
+    - name: Build ${{ matrix.package }}
+      run: |
+        nix build .#${{ matrix.package }} -L
+    
+    - name: Check flake
+      run: |
+        nix flake check -L
+    
+    - name: Get binary name
+      id: binary
+      run: |
+        if [ "${{ matrix.package }}" == "re3" ]; then
+          echo "name=re3" >> $GITHUB_OUTPUT
+        elif [ "${{ matrix.package }}" == "re3-vc" ]; then
+          echo "name=reVC" >> $GITHUB_OUTPUT
+        elif [ "${{ matrix.package }}" == "re3-lcs" ]; then
+          echo "name=reLCS" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.package }}-linux-x86_64
+        path: |
+          result/bin/${{ steps.binary.outputs.name }}
+          result/share/applications/*.desktop
+          result/share/icons/hicolor/256x256/apps/*.svg
