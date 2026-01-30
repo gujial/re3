@@ -3,10 +3,26 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    librw = {
+      url = "github:aap/librw";
+      flake = false;
+    };
+    ogg = {
+      url = "github:xiph/ogg";
+      flake = false;
+    };
+    opus = {
+      url = "github:xiph/opus";
+      flake = false;
+    };
+    opusfile = {
+      url = "github:xiph/opusfile";
+      flake = false;
+    };
   };
 
   outputs =
-    { self, nixpkgs }:
+    { self, nixpkgs, librw, ogg, opus, opusfile }:
     let
       pkgs = import nixpkgs { system = "x86_64-linux"; };
 
@@ -17,31 +33,75 @@
           pname = "re3-${branch}";
           version = "1.0.0";
 
-          src = self;
+          # 使用本地源，排除build目录和.git
+          src = pkgs.lib.cleanSourceWith {
+            filter = name: type:
+              let baseName = baseNameOf (toString name);
+              in !(
+                baseName == "build" ||
+                baseName == ".git" ||
+                baseName == ".gitignore" ||
+                baseName == "result" ||
+                baseName == ".vscode" ||
+                baseName == ".idea" ||
+                baseName == "vendor" # 排除本地vendor目录，我们将从inputs提供
+              );
+            src = ./.;
+          };
+
+          # 从inputs提供submodules
+          postUnpack = ''
+            mkdir -p $sourceRoot/vendor
+            cp -r ${librw} $sourceRoot/vendor/librw
+            cp -r ${ogg} $sourceRoot/vendor/ogg
+            cp -r ${opus} $sourceRoot/vendor/opus
+            cp -r ${opusfile} $sourceRoot/vendor/opusfile
+            
+            # 由于从flake inputs复制，目录可能是只读的
+            chmod -R u+w $sourceRoot/vendor
+          '';
 
           nativeBuildInputs = [
-            pkgs.premake5
+            pkgs.cmake
             pkgs.gcc
             pkgs.gnumake
+            pkgs.git
+            pkgs.pkg-config
+          ];
+
+          buildInputs = [
             pkgs.libx11
+            pkgs.libxcb
+            pkgs.libxkbcommon
             pkgs.libGL
+            pkgs.libGLU
             pkgs.openal
             pkgs.glew
             pkgs.glfw
             pkgs.libsndfile
             pkgs.libmpg123
+            pkgs.xorg.libXrandr
+            pkgs.xorg.libXinerama
+            pkgs.xorg.libXcursor
+            pkgs.xorg.libXi
           ];
 
           buildPhase = ''
-            substituteInPlace printHash.sh --replace-warn '#!/usr/bin/env sh' '#!${pkgs.bash}/bin/bash'
-
-            echo "Running premake5 gmake2..."
-            premake5 gmake2 --with-librw
-
+            cd ..
+            
+            export PKG_CONFIG_PATH="${pkgs.glfw}/lib/pkgconfig:${pkgs.openal}/lib/pkgconfig:${pkgs.libmpg123}/lib/pkgconfig:$PKG_CONFIG_PATH"
+            
+            cmake -S . -B build \
+              -G "Unix Makefiles" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DREVC_VENDORED_LIBRW=ON \
+              -DREVC_AUDIO=OAL \
+              -DLIBRW_PLATFORM=GL3 \
+              -DLIBRW_GL3_GFXLIB=GLFW \
+              -Wno-dev
+            
             cd build
-            config="release_linux-amd64-librw_gl3_glfw-oal"
-            echo "Building $config..."
-            make config=$config
+            make -j$NIX_BUILD_CORES
           '';
 
           program =
@@ -75,15 +135,15 @@
               throw "Unknown branch: ${branch}";
 
           installPhase = ''
-                      mkdir -p $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps
+            mkdir -p $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps
 
-            # 安装程序
-            cp ../bin/linux-amd64-librw_gl3_glfw-oal/Release/${program} $out/bin/${program}
+            cp "src/${program}" $out/bin/${program}
+            chmod +x $out/bin/${program}
 
-            # 安装图标到标准图标路径
-            cp ../res/images/logo.svg $out/share/icons/hicolor/256x256/apps/${program}.svg
+            if [ -f "../res/images/logo.svg" ]; then
+              cp ../res/images/logo.svg $out/share/icons/hicolor/256x256/apps/${program}.svg
+            fi
 
-            # 安装 desktop 文件
             cat > $out/share/applications/${program}.desktop <<EOF
             [Desktop Entry]
             Name=${name}
@@ -99,7 +159,7 @@
           meta = with pkgs.lib; {
             description =
               if desc == null then
-                "Re3 branch ${branch} built with Premake, OpenAL, and auto-arch detection."
+                "Re3 branch ${branch} built with CMake, OpenAL, and auto-arch detection."
               else
                 desc;
             license = licenses.mit;
@@ -118,23 +178,32 @@
 
       devShells.x86_64-linux.default = pkgs.mkShell {
         buildInputs = [
-          pkgs.premake5
+          pkgs.cmake
           pkgs.gcc
           pkgs.gnumake
+          pkgs.git
+          pkgs.pkg-config
           pkgs.libx11
+          pkgs.libxcb
+          pkgs.libxkbcommon
           pkgs.libGL
+          pkgs.libGLU
           pkgs.openal
           pkgs.glew
           pkgs.glfw
           pkgs.libsndfile
           pkgs.libmpg123
+          pkgs.xorg.libXrandr
+          pkgs.xorg.libXinerama
+          pkgs.xorg.libXcursor
+          pkgs.xorg.libXi
         ];
 
         shellHook = ''
           echo "re3 development environment loaded"
-          echo "Available build commands:"
-          echo "  premake5 gmake2 --with-librw"
-          echo "  cd build && make config=release_linux-amd64-librw_gl3_glfw-oal"
+          echo "Build commands:"
+          echo "  cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release -DREVC_VENDORED_LIBRW=ON -DREVC_AUDIO=OAL -DLIBRW_PLATFORM=GL3 -DLIBRW_GL3_GFXLIB=GLFW"
+          echo "  cd build && make -j\$(nproc)"
         '';
       };
     };
