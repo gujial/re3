@@ -15,11 +15,13 @@ class ReLCSConan(ConanFile):
         "audio": ["openal", "miles"],
         "with_libsndfile": [True, False],
         "with_opus": [True, False],
+        "vendored_librw": [True, False],
     }
     default_options = {
         "audio": "openal",
         "with_libsndfile": False,
         "with_opus": False,
+        "vendored_librw": True,
         # "libsndfile:with_external_libs": False,
         # "mpg123:flexible_resampling": False,
         # "mpg123:network": False,
@@ -48,7 +50,8 @@ class ReLCSConan(ConanFile):
             self.options.with_libsndfile = False
 
     def requirements(self):
-        self.requires("librw/{}".format(self.version))
+        if not self.options.vendored_librw:
+            self.requires("librw/{}".format(self.version))
         self.requires("mpg123/1.26.4")
         if self.options.audio == "openal":
             self.requires("openal/1.21.0")
@@ -60,13 +63,14 @@ class ReLCSConan(ConanFile):
             self.requires("opusfile/0.12")
 
     def export_sources(self):
-        for d in ("cmake", "src"):
+        for d in ("cmake", "gamefiles", "src", "vendor"):
             shutil.copytree(src=d, dst=os.path.join(self.export_sources_folder, d))
         self.copy("CMakeLists.txt")
 
     def validate(self):
-        if self.options["librw"].platform == "gl3" and self.options["librw"].gl3_gfxlib != "glfw":
-            raise ConanInvalidConfiguration("Only `glfw` is supported as gl3_gfxlib.")
+        if not self.options.vendored_librw:
+            if self.options["librw"].platform == "gl3" and self.options["librw"].gl3_gfxlib != "glfw":
+                raise ConanInvalidConfiguration("Only `glfw` is supported as gl3_gfxlib.")
         #if not self.options.with_opus:
         #    if not self.options["libsndfile"].with_external_libs:
         #        raise ConanInvalidConfiguration("reLCS with opus support requires a libsndfile built with external libs (=ogg/flac/opus/vorbis)")
@@ -91,17 +95,18 @@ class ReLCSConan(ConanFile):
                            set(OPENAL_LIBRARY ${OpenAL_LIBRARIES})
                            set(OPENAL_DEFINITIONS ${OpenAL_DEFINITIONS})
                            """), append=True)
-            if self.options["librw"].platform == "gl3" and self.options["librw"].gl3_gfxlib == "glfw":
-                tools.save("Findglfw3.cmake",
-                           textwrap.dedent(
-                               """
-                               if(NOT TARGET glfw)
-                                 message(STATUS "Creating glfw TARGET")
-                                 add_library(glfw INTERFACE IMPORTED)
-                                 set_target_properties(glfw PROPERTIES
-                                    INTERFACE_LINK_LIBRARIES CONAN_PKG::glfw)
-                               endif()
-                               """), append=True)
+            if not self.options.vendored_librw:
+                if self.options["librw"].platform == "gl3" and self.options["librw"].gl3_gfxlib == "glfw":
+                    tools.save("Findglfw3.cmake",
+                               textwrap.dedent(
+                                   """
+                                   if(NOT TARGET glfw)
+                                     message(STATUS "Creating glfw TARGET")
+                                     add_library(glfw INTERFACE IMPORTED)
+                                     set_target_properties(glfw PROPERTIES
+                                        INTERFACE_LINK_LIBRARIES CONAN_PKG::glfw)
+                                   endif()
+                                   """), append=True)
             tools.save("CMakeLists.txt",
                        textwrap.dedent(
                            """
@@ -117,10 +122,10 @@ class ReLCSConan(ConanFile):
         except FileNotFoundError:
             pass
         cmake = CMake(self)
-        cmake.definitions["RELCS_AUDIO"] = self._reLCS_audio
-        cmake.definitions["RELCS_WITH_OPUS"] = self.options.with_opus
-        cmake.definitions["RELCS_INSTALL"] = True
-        cmake.definitions["RELCS_VENDORED_LIBRW"] = False
+        cmake.definitions["RE3_AUDIO"] = self._re3_audio
+        cmake.definitions["RE3_WITH_OPUS"] = self.options.with_opus
+        cmake.definitions["RE3_INSTALL"] = True
+        cmake.definitions["RE3_VENDORED_LIBRW"] = self.options.vendored_librw
         env = {}
         if self._os_is_playstation2:
             cmake.definitions["CMAKE_TOOLCHAIN_FILE"] = self.deps_user_info["ps2dev-cmaketoolchain"].cmake_toolchain_file
