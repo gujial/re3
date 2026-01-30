@@ -3,6 +3,10 @@ name: reLCS premake amd64
 on:
   pull_request:
   push:
+    branches:
+      - master
+      - miami
+      - lcs
   release:
     types: published
 env:
