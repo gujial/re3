@@ -53,11 +53,17 @@ jobs:
           echo "name=reLCS" >> $GITHUB_OUTPUT
         fi
     
+    - name: Create release package
+      run: |
+        mkdir -p package
+        cp result/bin/${{ steps.binary.outputs.name }} package/
+        cp -r gamefiles/* package/
+        cd package
+        zip -r ../${{ matrix.package }}-linux-x86_64.zip .
+    
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.package }}-linux-x86_64
-        path: |
-          result/bin/${{ steps.binary.outputs.name }}
-          result/share/applications/*.desktop
-          result/share/icons/hicolor/256x256/apps/*.svg
+        path: ${{ matrix.package }}-linux-x86_64.zip
+        if-no-files-found: error
