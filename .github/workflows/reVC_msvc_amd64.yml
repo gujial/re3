@@ -4,9 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
       - miami
-      - lcs
   release:
     types: published
 env:
@@ -54,7 +52,7 @@ jobs:
         mv ./vendor/mpg123/dist/Win64/libmpg123-0.dll ./gamefiles/
         mv ./vendor/openal-soft/dist/Win64/OpenAL32.dll ./gamefiles/
     - name: Upload artifact to actions
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: reVC_${{matrix.buildtype}}_${{matrix.platform}}
         path: ./gamefiles/*
