@@ -32,5 +32,6 @@
   "C_Cpp.vcFormat.space.pointerReferenceAlignment": "right",
   "cSpell.enabled": false,
   "files.trimFinalNewlines": false,
-  "files.trimTrailingWhitespace": false
+  "files.trimTrailingWhitespace": false,
+  "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix"
 }
