@@ -3,6 +3,10 @@ name: reVC cmake devkitA64 (Nintendo Switch)
 on:
   pull_request:
   push:
+    branches:
+      - master
+      - miami
+      - lcs
   release:
     types: published
 jobs:

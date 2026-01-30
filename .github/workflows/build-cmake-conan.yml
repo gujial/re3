@@ -2,6 +2,10 @@ name: reVC conan+cmake
 on:
   pull_request:
   push:
+    branches:
+      - master
+      - miami
+      - lcs
   release:
     types: published
 jobs:
