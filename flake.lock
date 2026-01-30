@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "librw": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1757412609,
+        "narHash": "sha256-L27sTdE14wSrZQSPxqhJg5kwxdOvMW2WQ5OISco2qwI=",
+        "owner": "aap",
+        "repo": "librw",
+        "rev": "1499b9660cda257269992be04aa0595c6e82e0dc",
+        "type": "github"
+      },
+      "original": {
+        "owner": "aap",
+        "repo": "librw",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1769170682,
@@ -16,9 +32,61 @@
         "type": "github"
       }
     },
+    "ogg": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1751896827,
+        "narHash": "sha256-IoDEoh58OqiixLu8n3N/G9Fzqm4WYoTuGZLTLGw7XfM=",
+        "owner": "xiph",
+        "repo": "ogg",
+        "rev": "0288fadac3ac62d453409dfc83e9c4ab617d2472",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xiph",
+        "repo": "ogg",
+        "type": "github"
+      }
+    },
+    "opus": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1769009966,
+        "narHash": "sha256-SyGUedfpqWb5+URiX0Tw/g3VPWxJBNPDSHmv/j9xHls=",
+        "owner": "xiph",
+        "repo": "opus",
+        "rev": "a3f0ec02b34281c38aefdaf4bbbd5787ad641d62",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xiph",
+        "repo": "opus",
+        "type": "github"
+      }
+    },
+    "opusfile": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1765882903,
+        "narHash": "sha256-tANL22eOF5LqNVBQGW0Uh5IB9o3rFn6A7oXL4t16tcQ=",
+        "owner": "xiph",
+        "repo": "opusfile",
+        "rev": "cc04a82f7964067da6e3f5dddc7634b833c9402c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "xiph",
+        "repo": "opusfile",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "librw": "librw",
+        "nixpkgs": "nixpkgs",
+        "ogg": "ogg",
+        "opus": "opus",
+        "opusfile": "opusfile"
       }
     }
   },
