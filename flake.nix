@@ -1,5 +1,5 @@
 {
-  description = "Flake for building multiple re3 branches with branch-specific metadata";
+  description = "Flake for building re3 (GTA Vice City) miami branch";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -33,11 +33,11 @@
 
       mkPkgs = system: import nixpkgs { inherit system; };
 
-      # 构建单个分支的函数：直接返回 derivation，接受描述字符串
+      # 构建re3（miami分支）的函数
       buildRe3 =
-        pkgs: branch: desc:
+        pkgs:
         pkgs.stdenv.mkDerivation rec {
-          pname = "re3-${branch}";
+          pname = "reVC";
           version = "1.0.0";
 
           # 使用本地源，排除build目录和.git
@@ -111,35 +111,9 @@
             make -j$NIX_BUILD_CORES
           '';
 
-          program =
-            if branch == "master" then
-              "re3"
-            else if branch == "miami" then
-              "reVC"
-            else if branch == "lcs" then
-              "reLCS"
-            else
-              throw "Unknown branch: ${branch}";
-
-          name = 
-            if branch == "master" then
-              "Grand Theft Auto: III (re3)"
-            else if branch == "miami" then
-              "Grand Theft Auto: Vice City (reVC)"
-            else if branch == "lcs" then
-              "Grand Theft Auto: Liberty City Stories (reLCS)"
-            else
-              throw "Unknown branch: ${branch}";
-
-          re3-pwd =
-            if branch == "master" then
-              "~/.re3"
-            else if branch == "miami" then
-              "~/.reVC"
-            else if branch == "lcs" then
-              "~/.reLCS"
-            else
-              throw "Unknown branch: ${branch}";
+          program = "reVC";
+          name = "Grand Theft Auto: Vice City (reVC)";
+          re3-pwd = "~/.reVC";
 
           installPhase = ''
             mkdir -p $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps $out/share/${program}
@@ -169,11 +143,7 @@
           '';
 
           meta = with pkgs.lib; {
-            description =
-              if desc == null then
-                "Re3 branch ${branch} built with CMake, OpenAL, and auto-arch detection."
-              else
-                desc;
+            description = "Re3 miami branch: GTA Vice City engine port built with CMake, OpenAL, and libRW.";
             license = licenses.mit;
             maintainers = with maintainers; [ gujial ];
             platforms = platforms.unix;
@@ -183,9 +153,8 @@
       mkPackages = system:
         let pkgs = mkPkgs system;
         in {
-          re3 = buildRe3 pkgs "master" "Re3 master branch: the mainline GTA III engine port.";
-          re3-vc = buildRe3 pkgs "miami" "Re3 Miami (VC) branch: GTA Vice City engine port.";
-          re3-lcs = buildRe3 pkgs "lcs" "Re3 LCS branch: GTA Liberty City Stories engine port.";
+          reVC = buildRe3 pkgs;
+          default = buildRe3 pkgs;
         };
 
       mkDevShell = system:
