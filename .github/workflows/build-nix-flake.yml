@@ -38,11 +38,10 @@ jobs:
       with:
         platforms: arm64
     
-    - name: Install Nix
-      uses: cachix/install-nix-action@v25
+    - name: Install Nix (Determinate Systems)
+      uses: DeterminateSystems/nix-installer-action@main
       with:
-        nix_path: nixpkgs=channel:nixos-unstable
-        extra_nix_config: |
+        extra-conf: |
           experimental-features = nix-command flakes
           extra-platforms = ${{ matrix.system == 'aarch64-linux' && 'aarch64-linux' || '' }}
     
