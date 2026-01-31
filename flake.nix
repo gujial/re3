@@ -24,11 +24,18 @@
   outputs =
     { self, nixpkgs, librw, ogg, opus, opusfile }:
     let
-      pkgs = import nixpkgs { system = "x86_64-linux"; };
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      
+      forAllSystems = f: builtins.listToAttrs (map (system: {
+        name = system;
+        value = f system;
+      }) supportedSystems);
+
+      mkPkgs = system: import nixpkgs { inherit system; };
 
       # 构建单个分支的函数：直接返回 derivation，接受描述字符串
       buildRe3 =
-        branch: desc:
+        pkgs: branch: desc:
         pkgs.stdenv.mkDerivation rec {
           pname = "re3-${branch}";
           version = "1.0.0";
@@ -164,47 +171,56 @@
                 desc;
             license = licenses.mit;
             maintainers = with maintainers; [ gujial ];
-            platforms = platforms.linux;
+            platforms = platforms.unix;
           };
         };
 
+      mkPackages = system:
+        let pkgs = mkPkgs system;
+        in {
+          re3 = buildRe3 pkgs "master" "Re3 master branch: the mainline GTA III engine port.";
+          re3-vc = buildRe3 pkgs "miami" "Re3 Miami (VC) branch: GTA Vice City engine port.";
+          re3-lcs = buildRe3 pkgs "lcs" "Re3 LCS branch: GTA Liberty City Stories engine port.";
+        };
+
+      mkDevShell = system:
+        let pkgs = mkPkgs system;
+        in pkgs.mkShell {
+          buildInputs = [
+            pkgs.cmake
+            pkgs.gcc
+            pkgs.gnumake
+            pkgs.git
+            pkgs.pkg-config
+            pkgs.libx11
+            pkgs.libxcb
+            pkgs.libxkbcommon
+            pkgs.libGL
+            pkgs.libGLU
+            pkgs.openal
+            pkgs.glew
+            pkgs.glfw
+            pkgs.libsndfile
+            pkgs.libmpg123
+            pkgs.xorg.libXrandr
+            pkgs.xorg.libXinerama
+            pkgs.xorg.libXcursor
+            pkgs.xorg.libXi
+          ];
+
+          shellHook = ''
+            echo "re3 development environment loaded (${system})"
+            echo "Build commands:"
+            echo "  cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release -DREVC_VENDORED_LIBRW=ON -DREVC_AUDIO=OAL -DLIBRW_PLATFORM=GL3 -DLIBRW_GL3_GFXLIB=GLFW"
+            echo "  cd build && make -j\$(nproc)"
+          '';
+        };
     in
     {
-      packages.x86_64-linux = {
-        re3 = buildRe3 "master" "Re3 master branch: the mainline GTA III engine port.";
-        re3-vc = buildRe3 "miami" "Re3 Miami (VC) branch: GTA Vice City engine port.";
-        re3-lcs = buildRe3 "lcs" "Re3 LCS branch: GTA Liberty City Stories engine port.";
-      };
-
-      devShells.x86_64-linux.default = pkgs.mkShell {
-        buildInputs = [
-          pkgs.cmake
-          pkgs.gcc
-          pkgs.gnumake
-          pkgs.git
-          pkgs.pkg-config
-          pkgs.libx11
-          pkgs.libxcb
-          pkgs.libxkbcommon
-          pkgs.libGL
-          pkgs.libGLU
-          pkgs.openal
-          pkgs.glew
-          pkgs.glfw
-          pkgs.libsndfile
-          pkgs.libmpg123
-          pkgs.xorg.libXrandr
-          pkgs.xorg.libXinerama
-          pkgs.xorg.libXcursor
-          pkgs.xorg.libXi
-        ];
-
-        shellHook = ''
-          echo "re3 development environment loaded"
-          echo "Build commands:"
-          echo "  cmake -S . -B build -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release -DREVC_VENDORED_LIBRW=ON -DREVC_AUDIO=OAL -DLIBRW_PLATFORM=GL3 -DLIBRW_GL3_GFXLIB=GLFW"
-          echo "  cd build && make -j\$(nproc)"
-        '';
-      };
+      packages = forAllSystems mkPackages;
+      
+      devShells = forAllSystems (system: {
+        default = mkDevShell system;
+      });
     };
 }

@@ -10,10 +10,40 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
-        package: [re3]
+        include:
+          # Linux x86_64 builds
+          - runs-on: ubuntu-latest
+            package: re3
+            system: x86_64-linux
+          - runs-on: ubuntu-latest
+            package: re3-vc
+            system: x86_64-linux
+          - runs-on: ubuntu-latest
+            package: re3-lcs
+            system: x86_64-linux
+          # macOS x86_64 builds
+          - runs-on: macos-13
+            package: re3
+            system: x86_64-darwin
+          - runs-on: macos-13
+            package: re3-vc
+            system: x86_64-darwin
+          - runs-on: macos-13
+            package: re3-lcs
+            system: x86_64-darwin
+          # macOS ARM64 builds
+          - runs-on: macos-latest
+            package: re3
+            system: aarch64-darwin
+          - runs-on: macos-latest
+            package: re3-vc
+            system: aarch64-darwin
+          - runs-on: macos-latest
+            package: re3-lcs
+            system: aarch64-darwin
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -36,7 +66,7 @@ jobs:
     
     - name: Build ${{ matrix.package }}
       run: |
-        nix build .#${{ matrix.package }} -L
+        nix build ".#packages.${{ matrix.system }}.${{ matrix.package }}" -L
     
     - name: Check flake
       run: |
@@ -45,13 +75,17 @@ jobs:
     - name: Get binary name
       id: binary
       run: |
-        if [ "${{ matrix.package }}" == "re3" ]; then
-          echo "name=re3" >> $GITHUB_OUTPUT
-        elif [ "${{ matrix.package }}" == "re3-vc" ]; then
-          echo "name=reVC" >> $GITHUB_OUTPUT
-        elif [ "${{ matrix.package }}" == "re3-lcs" ]; then
-          echo "name=reLCS" >> $GITHUB_OUTPUT
-        fi
+        case "${{ matrix.package }}" in
+          re3)
+            echo "name=re3" >> $GITHUB_OUTPUT
+            ;;
+          re3-vc)
+            echo "name=reVC" >> $GITHUB_OUTPUT
+            ;;
+          re3-lcs)
+            echo "name=reLCS" >> $GITHUB_OUTPUT
+            ;;
+        esac
     
     - name: Create release package
       run: |
@@ -62,6 +96,6 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.package }}-linux-x86_64
+        name: ${{ matrix.package }}-${{ matrix.system }}
         path: package/
         if-no-files-found: error
