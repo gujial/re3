@@ -21,7 +21,7 @@ jobs:
           - runs-on: ubuntu-latest
             system: aarch64-linux
           # macOS x86_64 build
-          - runs-on: macos-13
+          - runs-on: macos-15
             system: x86_64-darwin
           # macOS ARM64 build
           - runs-on: macos-latest
