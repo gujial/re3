@@ -2,7 +2,7 @@
   description = "Flake for building re3 (GTA Liberty City Stories) lcs branch";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     librw = {
       url = "github:aap/librw";
       flake = false;
