@@ -262,7 +262,7 @@ int CFont::PS2Symbol = BUTTON_NONE;
 int CFont::ButtonsSlot = -1;
 #endif // BUTTON_ICONS
 
-// ÖÐÎÄÖ§³Ö
+// ï¿½ï¿½ï¿½ï¿½Ö§ï¿½ï¿½
 #include <cstdio>
 #include <cstdlib>
 struct CharPos {
@@ -279,7 +279,7 @@ GetCharPos(wchar chr)
 	return sTable[chr];
 }
 
-// ¶Á±í
+// ï¿½ï¿½ï¿½ï¿½
 bool
 ReadTable()
 {
@@ -319,7 +319,7 @@ CFont::Initialise(void)
 	case FONT_LANGSET_POLISH: CTxdStore::LoadTxd(slot, "MODELS/FONTS_P.TXD"); break;
 	case FONT_LANGSET_RUSSIAN: CTxdStore::LoadTxd(slot, "MODELS/FONTS_R.TXD"); break;
 	case FONT_LANGSET_JAPANESE: CTxdStore::LoadTxd(slot, "MODELS/FONTS_J.TXD"); break;
-	case FONT_LANGSET_CHINESE: CTxdStore::LoadTxd(slot, "MODELS/CHINESE.TXD"); break;
+	case FONT_LANGSET_CHINESE: CTxdStore::LoadTxd(slot, "MODELS/FONTS_SC.TXD"); break;
 	}
 	if(IsChinese()) {
 		if(!ReadTable()) {
@@ -432,7 +432,7 @@ CFont::LoadButtons(const char *txdPath)
 }
 #endif // BUTTON_ICONS
 
-//²Êµ°±äÁ¿1
+//ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½1
 uint8 clickNUM = 0;
 
 #ifdef MORE_LANGUAGES
@@ -460,7 +460,7 @@ CFont::ReloadFonts(uint8 set)
 		case FONT_LANGSET_POLISH: CTxdStore::LoadTxd(Slot, "MODELS/FONTS_P.TXD"); break;
 		case FONT_LANGSET_RUSSIAN: CTxdStore::LoadTxd(Slot, "MODELS/FONTS_R.TXD"); break;
 		case FONT_LANGSET_JAPANESE: CTxdStore::LoadTxd(Slot, "MODELS/FONTS_J.TXD"); break;
-		case FONT_LANGSET_CHINESE: CTxdStore::LoadTxd(Slot, "MODELS/CHINESE.TXD"); break;
+		case FONT_LANGSET_CHINESE: CTxdStore::LoadTxd(Slot, "MODELS/FONTS_SC.TXD"); break;
 		}
 		CTxdStore::PushCurrentTxd();
 		CTxdStore::SetCurrentTxd(Slot);
@@ -580,7 +580,7 @@ CFont::PrintCharDispatcher(float arg_x, float arg_y, wchar arg_char)
 		if(RenderState.bFontHalfTexture) { arg_char = FindNewCharacter(arg_char); }
 
 		
-		PrintChar(arg_x, arg_y, arg_char); // ¼Ó128Ç®ÊýÏÔÊ¾ÎÄ±¾Õý³£
+		PrintChar(arg_x, arg_y, arg_char); // ï¿½ï¿½128Ç®ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	} else {
 		PrintCHSChar(arg_x, arg_y, arg_char);
@@ -1283,7 +1283,7 @@ CFont::PrintString(float xstart, float ystart, wchar *s)
 {
 	
 	if(IsChinese()) {
-		//²Êµ°´úÂë
+		//ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½
 		//2wchar tts[] = {'C', 'H', 'I', 'N', 'E', 'S', 'E', '\0'};
 		std::wstring wa = L"FEL_CHS missing";
 		std::wstring ws=(wchar_t*)s;
@@ -1298,10 +1298,10 @@ CFont::PrintString(float xstart, float ystart, wchar *s)
 		}
 
 		// int a = sizeof( wchar_t);
-		// wchar_t *ww = L"Äã";
+		// wchar_t *ww = L"ï¿½ï¿½";
 		// int b = ww[0];
 		//  font.RenderText(s, &tfont, xstart, ystart, 0.8, Details.color);
-		// font.RenderText(NewFont::WstringTOWchar(L"ÄãºÃaaa"), &tfont, 0, 0, 0.8, Details.color);
+		// font.RenderText(NewFont::WstringTOWchar(L"ï¿½ï¿½ï¿½aaa"), &tfont, 0, 0, 0.8, Details.color);
 		PrintString_Chs(xstart, ystart, s);
 		// font.RenderText(s, &tfont, xstart, ystart, 0.8, Details.color);
 		// PrintString_Chs(xstart, ystart, s);
