@@ -1516,6 +1516,9 @@ Italian
 [FEL_SPA]
 Spanish
 
+[FEL_CHS]
+Simplified Chinese
+
 [FED_DBG]
 Menu Debug
 
