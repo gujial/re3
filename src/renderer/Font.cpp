@@ -1143,11 +1143,17 @@ CFont::GetCharacterSize_Chs(wchar arg_char, uint16 nFontStyle, bool FontHalfText
 		if(FontHalfTexture) { arg_char = FindNewCharacter(arg_char); }
 
 		if(bProp) {
-
+			#ifdef MORE_LANGUAGES
 			charWidth = Size[0][nFontStyle][arg_char];
-
+			#else
+			charWidth = Size[nFontStyle][arg_char];
+			#endif
 		} else {
+			#ifdef MORE_LANGUAGES
 			charWidth = Size[0][nFontStyle][209];
+			#else
+			charWidth = Size[nFontStyle][209];
+			#endif
 		}
 	}
 
