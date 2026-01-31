@@ -10,23 +10,23 @@ void UnicodeMakeUpperCase(wchar *dst, const wchar *src);
 
 struct CFontDetails
 {
-	CRGBA color;//ÑÕÉ«
-	float scaleX;//Ëõ·ÅX
-	float scaleY;//Ëõ·ÅY
-	float slant;//ÇãÐ±
-	float slantRefX;//ÇãÐ±x
-	float slantRefY;//ÇãÐ±y
-	bool8 justify;//ÎÄ±¾¶ÔÆä
-	bool8 centre;//¾ÓÖÐ ?ÖÐÐÄ?
-	bool8 rightJustify;//ÓÒ¶ÔÆë
-	bool8 background;//±³¾°
-	bool8 backgroundOnlyText;//½ö±³¾°ÎÄ±¾
-	bool8 proportional;// ±ÈÀý?
-	bool8 bIsShadow;//ÊÇ·ñÏÔÊ¾ÒõÓ°?
+	CRGBA color;//ï¿½ï¿½É«
+	float scaleX;//ï¿½ï¿½ï¿½ï¿½X
+	float scaleY;//ï¿½ï¿½ï¿½ï¿½Y
+	float slant;//ï¿½ï¿½Ð±
+	float slantRefX;//ï¿½ï¿½Ð±x
+	float slantRefY;//ï¿½ï¿½Ð±y
+	bool8 justify;//ï¿½Ä±ï¿½ï¿½ï¿½ï¿½ï¿½
+	bool8 centre;//ï¿½ï¿½ï¿½ï¿½ ?ï¿½ï¿½ï¿½ï¿½?
+	bool8 rightJustify;//ï¿½Ò¶ï¿½ï¿½ï¿½
+	bool8 background;//ï¿½ï¿½ï¿½ï¿½
+	bool8 backgroundOnlyText;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½
+	bool8 proportional;// ï¿½ï¿½ï¿½ï¿½?
+	bool8 bIsShadow;//ï¿½Ç·ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½Ó°?
 	bool8 bFlash;
 	bool8 bBold;
 	float alphaFade;
-	CRGBA backgroundColor;//±³¾°ÑÕÉ«
+	CRGBA backgroundColor;//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«
 	float wrapX;
 	float centreSize;
 	float rightJustifyWrap;
@@ -70,8 +70,12 @@ enum {
 	FONT_JAPANESE,
 	FONT_CHINESE,
 #endif
+#ifdef MORE_LANGUAGES
 	MAX_FONTS = FONT_CHINESE
-	//MAX_FONTS = FONT_HEADING
+#else
+	MAX_FONTS = FONT_HEADING
+#endif
+//MAX_FONTS = FONT_HEADING
 };
 
 enum {
@@ -254,5 +258,10 @@ public:
 		return LanguageSet == FONT_LANGSET_CHINESE;
 	}
 	static bool IsChineseFont() { return IsChinese() && (Details.style == FONT_CHINESE); }
+#else
+	static bool IsJapanese() { return false; }
+	static bool IsJapaneseFont() { return false; }
+	static bool IsChinese() { return false; }
+	static bool IsChineseFont() { return false; }
 #endif
 };

@@ -1704,7 +1704,9 @@ CFont::GetTextRect(CRect *rect, float xstart, float ystart, wchar *s)
 float
 CFont::GetCharacterWidth(wchar c)
 {
+	#ifdef MORE_LANGUAGES
 	uint8 tmp = LanguageSet;
+	#endif
 	float w = 0.0f;
 #ifdef MORE_LANGUAGES
 	if(IsChinese()) { LanguageSet = 0; }
@@ -1747,7 +1749,9 @@ CFont::GetCharacterWidth(wchar c)
 float
 CFont::GetCharacterSize(wchar c)
 {
+	#ifdef MORE_LANGUAGES
 	uint8 tmp = LanguageSet;
+	#endif
 	float w = 0.0f;
 #ifdef MORE_LANGUAGES
 
