@@ -10,22 +10,40 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
-        package: [re3-lcs]
+        include:
+          # Linux x86_64 build
+          - runs-on: ubuntu-latest
+            system: x86_64-linux
+          # Linux ARM64 build (using QEMU)
+          - runs-on: ubuntu-latest
+            system: aarch64-linux
+          # macOS x86_64 build
+          - runs-on: macos-15
+            system: x86_64-darwin
+          # macOS ARM64 build
+          - runs-on: macos-latest
+            system: aarch64-darwin
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: 'true'
     
-    - name: Install Nix
-      uses: cachix/install-nix-action@v25
+    - name: Set up QEMU (for aarch64-linux)
+      if: matrix.system == 'aarch64-linux'
+      uses: docker/setup-qemu-action@v3
       with:
-        nix_path: nixpkgs=channel:nixos-unstable
-        extra_nix_config: |
+        platforms: arm64
+    
+    - name: Install Nix (Determinate Systems)
+      uses: DeterminateSystems/nix-installer-action@main
+      with:
+        extra-conf: |
           experimental-features = nix-command flakes
+          extra-platforms = ${{ matrix.system == 'aarch64-linux' && 'aarch64-linux' || '' }}
     
     - name: Setup Cachix
       uses: cachix/cachix-action@v14
@@ -34,34 +52,56 @@ jobs:
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
         skipPush: ${{ secrets.CACHIX_AUTH_TOKEN == '' }}
     
-    - name: Build ${{ matrix.package }}
+    - name: Determine package name based on branch
+      id: package
       run: |
-        nix build .#${{ matrix.package }} -L
+        # For push events: refs/heads/master
+        # For pull_request events: refs/pull/123/merge
+        # For release events: refs/tags/v1.0.0
+        if [[ "$GITHUB_REF" == refs/heads/* ]]; then
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        elif [[ "$GITHUB_REF" == refs/pull/* ]]; then
+          BRANCH_NAME="${GITHUB_HEAD_REF}"
+        else
+          BRANCH_NAME="${GITHUB_REF_NAME}"
+        fi
+        
+        case "$BRANCH_NAME" in
+          master)
+            echo "name=re3" >> $GITHUB_OUTPUT
+            echo "binary=re3" >> $GITHUB_OUTPUT
+            ;;
+          miami)
+            echo "name=re3-vc" >> $GITHUB_OUTPUT
+            echo "binary=reVC" >> $GITHUB_OUTPUT
+            ;;
+          lcs)
+            echo "name=re3-lcs" >> $GITHUB_OUTPUT
+            echo "binary=reLCS" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "name=re3" >> $GITHUB_OUTPUT
+            echo "binary=re3" >> $GITHUB_OUTPUT
+            ;;
+        esac
+    
+    - name: Build ${{ steps.package.outputs.name }}
+      run: |
+        nix build ".#packages.${{ matrix.system }}.${{ steps.package.outputs.name }}" -L
     
     - name: Check flake
       run: |
         nix flake check -L
     
-    - name: Get binary name
-      id: binary
-      run: |
-        if [ "${{ matrix.package }}" == "re3" ]; then
-          echo "name=re3" >> $GITHUB_OUTPUT
-        elif [ "${{ matrix.package }}" == "re3-vc" ]; then
-          echo "name=reVC" >> $GITHUB_OUTPUT
-        elif [ "${{ matrix.package }}" == "re3-lcs" ]; then
-          echo "name=reLCS" >> $GITHUB_OUTPUT
-        fi
-    
     - name: Create release package
       run: |
         mkdir -p package
-        cp result/bin/${{ steps.binary.outputs.name }} package/
+        cp result/bin/${{ steps.package.outputs.binary }} package/
         cp -r gamefiles/* package/
     
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.package }}-linux-x86_64
+        name: ${{ steps.package.outputs.name }}-${{ matrix.system }}
         path: package/
         if-no-files-found: error
