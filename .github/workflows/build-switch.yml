@@ -17,12 +17,12 @@ jobs:
           submodules: 'true'
       - name: "Build files"
         run: |
-          /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-cmake -S. -Bbuild -DREVC_AUDIO=OAL -DLIBRW_PLATFORM=GL3 -DLIBRW_GL3_GFXLIB=GLFW -DREVC_WITH_OPUS=False -DREVC_VENDORED_LIBRW=True -DREVC_INSTALL=True
+          /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-cmake -S. -Bbuild -DRELCS_AUDIO=OAL -DLIBRW_PLATFORM=GL3 -DLIBRW_GL3_GFXLIB=GLFW -DRELCS_WITH_OPUS=False -DRELCS_VENDORED_LIBRW=True -DRELCS_INSTALL=True
           cmake --build build --parallel
       - name: "Create binary package (cpack)"
         working-directory: ./build
         run: |
-          cpack -G TXZ
+          cpack
       - name: "Archive binary package (github artifacts)"
         uses: actions/upload-artifact@v4
         with:
