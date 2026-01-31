@@ -22,7 +22,7 @@ jobs:
       - name: "Create binary package (cpack)"
         working-directory: ./build
         run: |
-          cpack
+          cpack -G TXZ
       - name: "Archive binary package (github artifacts)"
         uses: actions/upload-artifact@v4
         with:
