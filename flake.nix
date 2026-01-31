@@ -142,10 +142,15 @@
               throw "Unknown branch: ${branch}";
 
           installPhase = ''
-            mkdir -p $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps
+            mkdir -p $out/bin $out/share/applications $out/share/icons/hicolor/256x256/apps $out/share/${program}
 
             cp "src/${program}" $out/bin/${program}
             chmod +x $out/bin/${program}
+
+            # Copy gamefiles to share directory
+            if [ -d "../gamefiles" ]; then
+              cp -r ../gamefiles/* $out/share/${program}/
+            fi
 
             if [ -f "../res/images/logo.svg" ]; then
               cp ../res/images/logo.svg $out/share/icons/hicolor/256x256/apps/${program}.svg
