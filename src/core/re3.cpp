@@ -124,15 +124,26 @@ void LangJapSelect(int8 action)
 		FrontEndMenuManager.SaveSettings();
 	}
 }
+void
+LangchaSelect(int8 action)
+{
+	if(action == FEOPTION_ACTION_SELECT) {
+		FrontEndMenuManager.m_PrefsLanguage = CMenuManager::LANGUAGE_CHINESE;
+		FrontEndMenuManager.m_bFrontEnd_ReloadObrTxtGxt = true;
+		FrontEndMenuManager.InitialiseChangedLanguageSettings();
+		FrontEndMenuManager.SaveSettings();
+	}
+}
 #endif
 
 void
 CustomFrontendOptionsPopulate(void)
 {
 	// Most of custom options are done statically in MenuScreensCustom.cpp, we add them here only if they're dependent to extra files
-
+	//大多数自定义选项都在 MenuScreensCustom.cpp 中静态完成，只有当它们依赖于额外文件时，我们才将其添加到此处
 	int fd;
 	// These work only if we have neo folder, so they're dynamically added
+	// 只有当我们有 neo 文件夹时，这些才会起作用，因此它们是动态添加的
 #ifdef EXTENDED_PIPELINES
 	const char *vehPipelineNames[] = { "FED_MFX", "FED_NEO" };
 	const char *off_on[] = { "FEM_OFF", "FEM_ON" };
@@ -155,6 +166,7 @@ CustomFrontendOptionsPopulate(void)
 	}
 #endif
 	// Add outsourced language translations, if files are found
+	// 如果找到文件，添加外包语言翻译
 #ifdef MORE_LANGUAGES
 	int fd2;
 	FrontendOptionSetCursor(MENUPAGE_LANGUAGE_SETTINGS, 5, false);
@@ -171,6 +183,14 @@ CustomFrontendOptionsPopulate(void)
 	if (fd = CFileMgr::OpenFile("text/russian.gxt")) {
 		if (fd2 = CFileMgr::OpenFile("models/fonts_r.txd")) {
 			FrontendOptionAddDynamic("FEL_RUS", 0, 0, MENUALIGN_CENTER, nil, nil, LangRusSelect, nil, nil);
+			CFileMgr::CloseFile(fd2);
+		}
+		CFileMgr::CloseFile(fd);
+	}
+
+	if(fd = CFileMgr::OpenFile("text/chinese.gxt")) {
+		if(fd2 = CFileMgr::OpenFile("models/chinese.txd")) {
+			FrontendOptionAddDynamic("FEL_CHS", 0, 0, MENUALIGN_CENTER, nil, nil, LangchaSelect, nil, nil);
 			CFileMgr::CloseFile(fd2);
 		}
 		CFileMgr::CloseFile(fd);
@@ -490,6 +510,7 @@ bool LoadINISettings()
 	ReadIniIfExists("VideoMode", "Depth", &FrontEndMenuManager.m_nPrefsDepth);
 	ReadIniIfExists("VideoMode", "Subsystem", &FrontEndMenuManager.m_nPrefsSubsystem);
 	// Windowed mode is loaded below in CUSTOM_FRONTEND_OPTIONS section
+	//窗口模式在下面的 CUSTOM_FRONTEND_OPTIONS 部分中加载
 #else
 	ReadIniIfExists("Graphics", "VideoMode", &FrontEndMenuManager.m_nDisplayVideoMode);
 #endif
@@ -599,6 +620,7 @@ void SaveINISettings()
 	StoreIni("VideoMode", "Depth", FrontEndMenuManager.m_nPrefsDepth);
 	StoreIni("VideoMode", "Subsystem", FrontEndMenuManager.m_nPrefsSubsystem);
 	// Windowed mode is loaded below in CUSTOM_FRONTEND_OPTIONS section
+	//窗口模式在下面的 CUSTOM_FRONTEND_OPTIONS 部分中加载
 #else
 	StoreIni("Graphics", "VideoMode", FrontEndMenuManager.m_nDisplayVideoMode);
 #endif
@@ -906,6 +928,14 @@ switchWeather(void)
 }
 
 void
+MyTest1()
+{
+	wchar *s = (wchar*)L"~n~ tanka";
+	CHud::SetHelpMessage(s, true);
+	SpawnCar(MI_RHINO);
+}
+
+void
 DebugMenuPopulate(void)
 {
 	if(1){
@@ -933,6 +963,9 @@ DebugMenuPopulate(void)
 			"18", "19", "20", "21", "22", "23", "24"
 		};
 		DebugMenuEntry *e;
+
+		DebugMenuAddCmd("MyTest", "BUutton1", MyTest1);
+
 		e = DebugMenuAddVar("Time & Weather", "Current Hour", &CClock::GetHoursRef(), nil, 1, 0, 23, nil);
 		DebugMenuEntrySetWrap(e, true);
 		e = DebugMenuAddVar("Time & Weather", "Current Minute", &CClock::GetMinutesRef(),
@@ -1067,9 +1100,10 @@ extern bool gbRenderWorld2;
 		DebugMenuAddVarBool8("Render", "Occlusion debug", &bDispayOccDebugStuff, nil);
 #endif
 #ifdef LIBRW
-		DebugMenuAddVarBool32("Render", "MatFX env map apply light", &rw::MatFX::envMapApplyLight, nil);
-		DebugMenuAddVarBool32("Render", "MatFX env map flip U", &rw::MatFX::envMapFlipU, nil);
-		DebugMenuAddVarBool32("Render", "MatFX env map use matcolor", &rw::MatFX::envMapUseMatColor, nil);
+		//改
+		//DebugMenuAddVarBool32("Render", "MatFX env map apply light", &rw::MatFX::envMapApplyLight, nil);
+		//DebugMenuAddVarBool32("Render", "MatFX env map flip U", &rw::MatFX::envMapFlipU, nil);
+		//DebugMenuAddVarBool32("Render", "MatFX env map use matcolor", &rw::MatFX::envMapUseMatColor, nil);
 #endif
 #ifdef EXTENDED_PIPELINES
 		static const char *vehpipenames[] = { "MatFX", "Neo" };
@@ -1171,6 +1205,10 @@ extern bool gbRenderWorld2;
 		DebugMenuAddVar("Cam", "Cam Mode", &DebugCamMode, nil, 1, 0, CCam::MODE_EDITOR, nil);
 		DebugMenuAddCmd("Cam", "Normal", []() { DebugCamMode = 0; });
 		DebugMenuAddCmd("Cam", "Reset Statics", ResetCamStatics);
+
+
+		
+
 
 		CTweakVars::AddDBG("Debug");
 	}

@@ -108,6 +108,7 @@ char CGame::aDatFile[32];
 #ifdef MORE_LANGUAGES
 bool CGame::russianGame = false;
 bool CGame::japaneseGame = false;
+bool CGame::chineseGame = false;
 #endif
 #ifndef MASTER
 CVector CGame::PlayerCoords;
@@ -245,16 +246,18 @@ CGame::InitialiseRenderWare(void)
 
 #ifdef LIBRW
 #ifdef PS2_MATFX
-	rw::MatFX::envMapApplyLight = true;
-	rw::MatFX::envMapUseMatColor = true;
-	rw::MatFX::envMapFlipU = true;
+	//¸Ä
+	//rw::MatFX::envMapApplyLight = true;
+	//rw::MatFX::envMapUseMatColor = true;
+	//rw::MatFX::envMapFlipU = true;
 #else
 	rw::MatFX::envMapApplyLight = false;
 	rw::MatFX::envMapUseMatColor = false;
 	rw::MatFX::envMapFlipU = false;
 #endif
 	rw::RGBA envcol = { 64, 64, 64, 255 };
-	rw::MatFX::envMapColor = envcol;
+	//¸Ä
+	//rw::MatFX::envMapColor = envcol;
 #else
 #ifdef PS2_MATFX
 	ReplaceMatFxCallback();

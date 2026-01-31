@@ -1,4 +1,4 @@
-#define FORCE_PC_SCALING
+﻿#define FORCE_PC_SCALING
 #define WITHWINDOWS
 #define WITHDINPUT
 #include "common.h"
@@ -35,6 +35,7 @@
 #include "FileLoader.h"
 #include "User.h"
 #include "sampman.h"
+
 
 // Similar story to Hud.cpp:
 // Game has colors inlined in code.
@@ -934,6 +935,12 @@ CMenuManager::DoSettingsBeforeStartingAGame()
 	DMAudio.ResetTimers(CTimer::GetTimeInMilliseconds());
 }
 
+
+CSprite2d m_Sprite;
+#define KEYJUSTDOWN(k) ControlsManager.GetIsKeyboardKeyJustDown((RsKeyCodes)k)
+#define KEYDOWN(k) ControlsManager.GetIsKeyboardKeyDown((RsKeyCodes)k)
+bool init = false;
+
 void
 CMenuManager::DrawStandardMenus(bool activeScreen)
 {
@@ -989,7 +996,7 @@ CMenuManager::DrawStandardMenus(bool activeScreen)
 		CFont::SetColor(CRGBA(HEADER_COLOR.r, HEADER_COLOR.g, HEADER_COLOR.b, FadeIn(255)));
 		CFont::PrintString(SCREEN_STRETCH_FROM_RIGHT(MENUHEADER_POS_X), SCREEN_SCALE_Y(MENUHEADER_POS_Y), TheText.Get(aScreens[m_nCurrScreen].m_ScreenName));
 	}
-
+	
 	// Label
 	wchar *str;
 	if (aScreens[m_nCurrScreen].m_aEntries[0].m_Action == MENUACTION_LABEL) {
@@ -2074,6 +2081,8 @@ CMenuManager::DrawControllerScreenExtraText(int yStart, int xStart, int lineHeig
 		CFont::SetColor(CRGBA(233, 22, 159, 255));
 		CFont::PrintString(xStart, MENU_Y(yStart + 10), error);
 	}
+
+
 }
 
 void
@@ -2985,7 +2994,10 @@ CMenuManager::InitialiseChangedLanguageSettings()
 		case LANGUAGE_JAPANESE:
 			CFont::ReloadFonts(FONT_LANGSET_JAPANESE);
 			break;
-		default:
+		case LANGUAGE_CHINESE:
+			CFont::ReloadFonts(FONT_LANGSET_CHINESE);
+			break;
+		default: 
 			CFont::ReloadFonts(FONT_LANGSET_EFIGS);
 			break;
 		}
@@ -3005,6 +3017,8 @@ CMenuManager::InitialiseChangedLanguageSettings()
 		case LANGUAGE_JAPANESE:
 			CGame::japaneseGame = true;
 			break;
+		case LANGUAGE_CHINESE:
+			CGame::chineseGame = true;
 #endif
 		default:
 			break;
