@@ -1,5 +1,7 @@
 # reVC
 
+**Languages:** [English] | [中文 (Chinese)](docs/README.zh_CN.md)
+
 ## Intro
 
 In this repository you'll find the fully reversed source code for GTA III ([master](https://github.com/GTAmodding/re3/tree/master/) branch) and GTA VC ([miami](https://github.com/GTAmodding/re3/tree/miami/) branch).
@@ -86,46 +88,85 @@ When using premake, you may want to point GTA_VC_RE_DIR environment variable to 
 
 Clone the repository with `git clone --recursive -b miami https://github.com/GTAmodding/re3.git reVC`. Then `cd reVC` into the cloned repository.
 
-<details><summary>Linux Premake</summary>
+<details><summary>Linux</summary>
 
-For Linux using premake, proceed: [Building on Linux](https://github.com/GTAmodding/re3/wiki/Building-on-Linux)
+1. Ensure you have the required dependencies installed
+2. Run premake to generate build files:
+   ```bash
+   ./premake5Linux --with-librw gmake2
+   ```
+3. Build the project (choose one):
+   ```bash
+   cd build
+   make -j5 config=debug_linux-amd64-librw_gl3_glfw-oal     # Debug build
+   make -j5 config=release_linux-amd64-librw_gl3_glfw-oal   # Release build
+   ```
+
+For detailed setup instructions, see: [Building on Linux](https://github.com/GTAmodding/re3/wiki/Building-on-Linux)
 
 </details>
 
-<details><summary>Linux Conan</summary>
+<details><summary>macOS</summary>
 
-Install python and conan, and then run build.
+1. Ensure you have the required dependencies installed
+2. Run premake to generate build files:
+   ```bash
+   premake5 --with-librw gmake2
+   ```
+3. Build the project (choose one):
+   ```bash
+   cd build
+   make -j5 config=debug_macosx-amd64-librw_gl3_glfw-oal     # Debug build
+   make -j5 config=release_macosx-amd64-librw_gl3_glfw-oal   # Release build
+   ```
+
+For detailed setup instructions, see: [Building on macOS](https://github.com/GTAmodding/re3/wiki/Building-on-MacOS)
+
+</details>
+
+<details><summary>Nix/NixOS</summary>
+
+reVC provides a `flake.nix` for building with Nix. You have two options:
+
+**Option 1: Build in a development shell:**
+```bash
+nix flake update  # Update flake inputs if needed
+nix develop       # Enter development shell with all dependencies
+# Then run the build commands as described in Linux section above
 ```
-conan export vendor/librw librw/master@
-mkdir build
-cd build
-conan install .. reVC/master@ -if build -o reVC:audio=openal -o librw:platform=gl3 -o librw:gl3_gfxlib=glfw --build missing -s reVC:build_type=RelWithDebInfo -s librw:build_type=RelWithDebInfo
-conan build .. -if build -bf build -pf package
+
+**Option 2: Build directly with Nix flakes:**
+```bash
+nix build .#re3-vc       # Build GTA Vice City (miami branch)
 ```
-</details>
 
-<details><summary>MacOS Premake</summary>
-
-For MacOS using premake, proceed: [Building on MacOS](https://github.com/GTAmodding/re3/wiki/Building-on-MacOS)
+The built binaries will be in `./result/bin/`
 
 </details>
 
-<details><summary>FreeBSD</summary>
+### Quick Build Reference
 
-For FreeBSD using premake, proceed: [Building on FreeBSD](https://github.com/GTAmodding/re3/wiki/Building-on-FreeBSD)
+**Linux Debug:**
+```bash
+./premake5Linux --with-librw gmake2 && cd build && make -j5 config=debug_linux-amd64-librw_gl3_glfw-oal verbose=1
+```
 
-</details>
+**Linux Release:**
+```bash
+./premake5Linux --with-librw gmake2 && cd build && make -j5 config=release_linux-amd64-librw_gl3_glfw-oal verbose=1
+```
 
-<details><summary>Windows</summary>
+**macOS Debug:**
+```bash
+premake5 --with-librw gmake2 && cd build && make -j5 config=debug_macosx-amd64-librw_gl3_glfw-oal verbose=1
+```
 
-Assuming you have Visual Studio 2015/2017/2019:
-- Run one of the `premake-vsXXXX.cmd` variants on root folder.
-- Open build/reVC.sln with Visual Studio and compile the solution.
-    
-Microsoft recently discontinued its downloads of the DX9 SDK. You can download an archived version here: https://archive.org/details/dxsdk_jun10
+**macOS Release:**
+```bash
+premake5 --with-librw gmake2 && cd build && make -j5 config=release_macosx-amd64-librw_gl3_glfw-oal verbose=1
+```
 
-**If you choose OpenAL on Windows** You must read [Running OpenAL build on Windows](https://github.com/GTAmodding/re3/wiki/Running-OpenAL-build-on-Windows).
-</details>
+### Build Options
 
 > :information_source: premake has an `--with-lto` option if you want the project to be compiled with Link Time Optimization.
 
