@@ -3,11 +3,11 @@
     "librw": {
       "flake": false,
       "locked": {
-        "lastModified": 1757412609,
-        "narHash": "sha256-L27sTdE14wSrZQSPxqhJg5kwxdOvMW2WQ5OISco2qwI=",
+        "lastModified": 1787759601,
+        "narHash": "sha256-FfaNUACejubK3JrYYYTYo2LJ+ZV6wV3qrBUpMbBCTzE=",
         "owner": "aap",
         "repo": "librw",
-        "rev": "1499b9660cda257269992be04aa0595c6e82e0dc",
+        "rev": "18532c2e13efbc1aa43f0b00b4459831f9414de0",
         "type": "github"
       },
       "original": {
@@ -18,16 +18,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1769598131,
-        "narHash": "sha256-e7VO/kGLgRMbWtpBqdWl0uFg8Y2XWFMdz0uUJvlML8o=",
+        "lastModified": 1788297115,
+        "narHash": "sha256-Z+vUNbfd2FIKkWOTkcT7RYlh3oFCnig/d2eXD1SWf2E=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fa83fd837f3098e3e678e6cf017b2b36102c7211",
+        "rev": "a3116115851d68b8952a2a4221cc25a84e56b532",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-25.11",
+        "ref": "nixos-26.05",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -35,11 +35,11 @@
     "ogg": {
       "flake": false,
       "locked": {
-        "lastModified": 1751896827,
-        "narHash": "sha256-IoDEoh58OqiixLu8n3N/G9Fzqm4WYoTuGZLTLGw7XfM=",
+        "lastModified": 1772457035,
+        "narHash": "sha256-neCZLIrl3Uw58/N3FM3pm6Y7gV8WuVmJgfs9wfTK1to=",
         "owner": "xiph",
         "repo": "ogg",
-        "rev": "0288fadac3ac62d453409dfc83e9c4ab617d2472",
+        "rev": "06a5e0262cdc28aa4ae6797627a783b5010440f0",
         "type": "github"
       },
       "original": {
@@ -51,11 +51,11 @@
     "opus": {
       "flake": false,
       "locked": {
-        "lastModified": 1769009966,
-        "narHash": "sha256-SyGUedfpqWb5+URiX0Tw/g3VPWxJBNPDSHmv/j9xHls=",
+        "lastModified": 1787952689,
+        "narHash": "sha256-8pZMximCOToNhVGg6Ytk/3QjqbrDFaydhC1ob/ZwpxM=",
         "owner": "xiph",
         "repo": "opus",
-        "rev": "a3f0ec02b34281c38aefdaf4bbbd5787ad641d62",
+        "rev": "8f39f9725c9546d64c6eb8fff4d8c1b19abba1e6",
         "type": "github"
       },
       "original": {
@@ -67,11 +67,11 @@
     "opusfile": {
       "flake": false,
       "locked": {
-        "lastModified": 1765882903,
-        "narHash": "sha256-tANL22eOF5LqNVBQGW0Uh5IB9o3rFn6A7oXL4t16tcQ=",
+        "lastModified": 1774735143,
+        "narHash": "sha256-z0AdE4zgDYkHlMmEovdeMOFXTr8hGlFAJ5vfPXGPDzk=",
         "owner": "xiph",
         "repo": "opusfile",
-        "rev": "cc04a82f7964067da6e3f5dddc7634b833c9402c",
+        "rev": "6dfd29e7adb87f2e193575fc3fa88cbf1a0b27df",
         "type": "github"
       },
       "original": {
