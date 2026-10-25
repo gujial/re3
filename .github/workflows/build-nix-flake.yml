@@ -2,93 +2,65 @@ name: Nix Flake Build
 
 on:
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   push:
-    branches:
-      - miami-improve
+    branches: [miami-improve]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   release:
-    types: published
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
   build:
-    runs-on: ${{ matrix.runs-on }}
+    name: Nix ${{ matrix.target.system }} ${{ matrix.variant }}
+    runs-on: ${{ matrix.target.runner }}
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          # Linux x86_64 build
-          - runs-on: ubuntu-latest
-            system: x86_64-linux
-          # Linux ARM64 build (using QEMU)
-          - runs-on: ubuntu-latest
-            system: aarch64-linux
-          # macOS ARM64 build
-          - runs-on: macos-latest
-            system: aarch64-darwin
+        target: ${{ fromJSON((github.event_name == 'release' || github.event_name == 'workflow_dispatch') && '[{"system":"x86_64-linux","runner":"ubuntu-24.04"},{"system":"aarch64-linux","runner":"ubuntu-24.04-arm"},{"system":"aarch64-darwin","runner":"macos-15"}]' || '[{"system":"x86_64-linux","runner":"ubuntu-24.04"}]') }}
+        variant: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["Release","Debug"]' || '["Release"]') }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-    
-    - name: Set up QEMU (for aarch64-linux)
-      if: matrix.system == 'aarch64-linux'
-      uses: docker/setup-qemu-action@v3
-      with:
-        platforms: arm64
-    
-    - name: Install Nix (Determinate Systems)
-      uses: DeterminateSystems/nix-installer-action@main
-      with:
-        extra-conf: |
-          experimental-features = nix-command flakes
-          extra-platforms = ${{ matrix.system == 'aarch64-linux' && 'aarch64-linux' || '' }}
-    
-    - name: Setup Cachix
-      uses: cachix/cachix-action@v14
-      with:
-        name: re3
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-        skipPush: ${{ secrets.CACHIX_AUTH_TOKEN == '' }}
-    
-    - name: Determine package name
-      id: package
-      run: |
-        echo "name=reVC" >> $GITHUB_OUTPUT
-        echo "binary=reVC" >> $GITHUB_OUTPUT
-    
-    - name: Build reVC
-      run: |
-        nix build ".#packages.${{ matrix.system }}.reVC-Improved" -L
-
-    - name: Build reVC (Debug)
-      run: |
-        nix build ".#packages.${{ matrix.system }}.reVC-Improved-debug" -L
-    
-    - name: Check flake
-      run: |
-        nix flake check -L
-    
-    - name: Create release package
-      run: |
-        mkdir -p package
-        cp result/bin/reVC-Improved package/
-        cp -r result/share/reVC-Improved/* package/
-
-    - name: Create debug package
-      run: |
-        mkdir -p package-debug
-        cp result/bin/reVC-Improved package-debug/
-        cp -r result/share/reVC-Improved/* package-debug/
-    
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: reVC-${{ matrix.system }}
-        path: package/
-        if-no-files-found: error
-
-    - name: Upload debug artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: reVC-debug-${{ matrix.system }}
-        path: package-debug/
-        if-no-files-found: error
+      # Nix obtains dependencies from flake.lock, not the local submodules.
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v14
+        with:
+          name: re3
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          skipPush: ${{ secrets.CACHIX_AUTH_TOKEN == '' }}
+      - name: Check flake evaluation
+        if: matrix.target.system == 'x86_64-linux' && matrix.variant == 'Release'
+        run: nix flake check --no-build --no-update-lock-file
+      - name: Build
+        env:
+          SYSTEM: ${{ matrix.target.system }}
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          package=reVC-Improved
+          if [ "$VARIANT" = Debug ]; then package=reVC-Improved-debug; fi
+          nix build ".#packages.$SYSTEM.$package" --out-link result-ci --no-update-lock-file -L
+      - name: Package
+        run: |
+          mkdir package
+          cp result-ci/bin/reVC-Improved package/
+          cp -r result-ci/share/reVC-Improved/. package/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reVC-Improved-${{ matrix.target.system }}-${{ matrix.variant }}
+          path: package/
+          if-no-files-found: error
+          retention-days: 14

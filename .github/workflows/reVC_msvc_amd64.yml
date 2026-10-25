@@ -1,67 +1,86 @@
-name: reVC premake amd64
+name: Windows Premake Build
 
 on:
   pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   push:
-    branches:
-      - miami-improve
+    branches: [miami-improve]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
   release:
-    types: published
-env:
-  GLFW_VER: "3.3.2"
-  GLFW_BASE: "glfw-3.3.2.bin.WIN64"
-  GLFW_FILE: "glfw-3.3.2.bin.WIN64.zip"
-  GLFW_URL: "https://github.com/glfw/glfw/releases/download/3.3.2/glfw-3.3.2.bin.WIN64.zip"
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
+
 jobs:
   build:
-    runs-on: windows-2019
+    name: Windows ${{ matrix.platform }} ${{ matrix.buildtype }}
+    runs-on: windows-2022
     strategy:
+      fail-fast: false
       matrix:
-        platform: [win-amd64-librw_d3d9-oal, win-amd64-librw_gl3_glfw-oal]
-        buildtype: [Debug, Release]
+        platform: ${{ fromJSON((github.event_name == 'release' || github.event_name == 'workflow_dispatch') && '["win-amd64-librw_d3d9-oal","win-amd64-librw_gl3_glfw-oal","win-x86-librw_d3d9-mss","win-x86-librw_gl3_glfw-mss","win-x86-librw_d3d9-oal","win-x86-librw_gl3_glfw-oal"]' || '["win-amd64-librw_d3d9-oal","win-amd64-librw_gl3_glfw-oal"]') }}
+        buildtype: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["Debug","Release","Vanilla"]' || '["Release"]') }}
+        exclude:
+          - platform: win-amd64-librw_d3d9-oal
+            buildtype: Vanilla
+          - platform: win-amd64-librw_gl3_glfw-oal
+            buildtype: Vanilla
+    env:
+      PLATFORM: ${{ matrix.platform }}
+      BUILD_TYPE: ${{ matrix.buildtype }}
+      GLFW_BASE: glfw-3.3.2.bin.${{ contains(matrix.platform, 'amd64') && 'WIN64' || 'WIN32' }}
+      DLL_ARCH: ${{ contains(matrix.platform, 'amd64') && 'Win64' || 'Win32' }}
     steps:
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
-    - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
-    - if: ${{ matrix.platform }} == "win-amd64-librw_gl3_glfw-mss"
-      name: Download glfw
-      uses: carlosperate/download-file-action@v1.0.3
-      with:
-        file-url: ${{env.GLFW_URL}}
-    - if: ${{ matrix.platform }} == "win-amd64-librw_gl3_glfw-mss"
-      name: Unpack archives
-      run: |
-          7z x ${{env.GLFW_FILE}}
-    - name: Configure build
-      run: |
-        ./premake5 vs2019 --with-librw --no-full-paths --glfwdir64=${{env.GLFW_BASE}}
-    - name: Build
-      run: |
-        msbuild -m build/reVC.sln /property:Configuration=${{matrix.buildtype}} /property:Platform=${{matrix.platform}}
-    # - name: Pack artifacts
-      # run: |
-        # 7z a reVC_${{matrix.buildtype}}_${{matrix.platform}}.zip ./bin/${{matrix.platform}}/${{matrix.buildtype}}/*
-    - name: Move binaries to gamefiles
-      run: |
-        mv ./bin/${{matrix.platform}}/${{matrix.buildtype}}/reVC.exe ./gamefiles/
-        mv ./bin/${{matrix.platform}}/${{matrix.buildtype}}/reVC.pdb ./gamefiles/
-    - name: Move dynamic dependencies to gamefiles
-      run: |
-        mv ./vendor/mpg123/dist/Win64/libmpg123-0.dll ./gamefiles/
-        mv ./vendor/openal-soft/dist/Win64/OpenAL32.dll ./gamefiles/
-    - name: Upload artifact to actions
-      uses: actions/upload-artifact@v4
-      with:
-        name: reVC_${{matrix.buildtype}}_${{matrix.platform}}
-        path: ./gamefiles/*
-#    - name: Upload artifact to Bintray
-#      uses: hpcsc/upload-bintray-docker-action@v1
-#      with:
-#        repository: reVC
-#        package: ${{matrix.buildtype}}_${{matrix.platform}}
-#        version:  1.0-$(echo ${GITHUB_SHA}
-#        sourcePath: ./bin/${{matrix.platform}}/${{matrix.buildtype}}
-#        username: gtamodding
-#        apiKey: ${{secrets.BINTRAY_API_KEY}}
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: microsoft/setup-msbuild@v2
+      - name: Cache GLFW
+        if: contains(matrix.platform, 'glfw')
+        id: glfw-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.GLFW_BASE }}
+          key: glfw-${{ env.GLFW_BASE }}
+      - name: Download GLFW
+        if: contains(matrix.platform, 'glfw') && steps.glfw-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://github.com/glfw/glfw/releases/download/3.3.2/$env:GLFW_BASE.zip" -OutFile glfw.zip
+          Expand-Archive glfw.zip -DestinationPath .
+      # Keep the vs2019 project format for the bundled Premake and GLFW libraries;
+      # MSBuild on windows-2022 compiles it with the installed v143 toolset.
+      - name: Configure
+        run: ./premake5.exe vs2019 --with-librw --no-full-paths --glfwdir32=$env:GLFW_BASE --glfwdir64=$env:GLFW_BASE
+      - name: Build
+        run: msbuild -m build/reVC.sln /property:Configuration=$env:BUILD_TYPE /property:Platform=$env:PLATFORM /property:PlatformToolset=v143
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory package | Out-Null
+          Copy-Item gamefiles/* package/ -Recurse
+          $output = "bin/$env:PLATFORM/$env:BUILD_TYPE"
+          Copy-Item "$output/reVC-Improved.exe" package/
+          if (Test-Path "$output/reVC-Improved.pdb") {
+            Copy-Item "$output/reVC-Improved.pdb" package/
+          }
+          if ($env:PLATFORM.EndsWith('-oal')) {
+            Copy-Item "vendor/mpg123/dist/$env:DLL_ARCH/libmpg123-0.dll" package/
+            Copy-Item "vendor/openal-soft/dist/$env:DLL_ARCH/OpenAL32.dll" package/
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reVC-Improved-${{ matrix.platform }}-${{ matrix.buildtype }}
+          path: package/
+          if-no-files-found: error
+          retention-days: 14

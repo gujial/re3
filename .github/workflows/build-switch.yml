@@ -1,31 +1,35 @@
+name: Nintendo Switch CMake Build
 
-name: reVC cmake devkitA64 (Nintendo Switch)
 on:
-  pull_request:
-  push:
-    branches:
-      - miami-improve
   release:
-    types: published
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'release' }}
+
 jobs:
   build-nintendo-switch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: devkitpro/devkita64:latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          submodules: 'true'
-      - name: "Build files"
+          submodules: recursive
+      - name: Configure and build
         run: |
-          /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-cmake -S. -Bbuild -DREVC_AUDIO=OAL -DLIBRW_PLATFORM=GL3 -DLIBRW_GL3_GFXLIB=GLFW -DREVC_WITH_OPUS=False -DREVC_VENDORED_LIBRW=True -DREVC_INSTALL=True
+          /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DREVC_AUDIO=OAL -DLIBRW_PLATFORM=GL3 -DLIBRW_GL3_GFXLIB=GLFW -DREVC_WITH_OPUS=OFF -DREVC_VENDORED_LIBRW=ON -DREVC_INSTALL=ON
           cmake --build build --parallel
-      - name: "Create binary package (cpack)"
-        working-directory: ./build
-        run: |
-          cpack
-      - name: "Archive binary package (github artifacts)"
-        uses: actions/upload-artifact@v4
+      - name: Package
+        working-directory: build
+        run: cpack
+      - uses: actions/upload-artifact@v4
         with:
-          name: "switch-gl3"
+          name: reVC-Improved-switch-gl3-Release
           path: build/*.tar.xz
           if-no-files-found: error
+          retention-days: 14
