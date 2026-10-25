@@ -65,6 +65,9 @@
               in
               !(
                 baseName == "build"
+                || baseName == "build-clangd"
+                || baseName == "local_gamefiles"
+                || baseName == ".direnv"
                 || baseName == ".git"
                 || baseName == ".gitignore"
                 || baseName == "result"
@@ -211,6 +214,7 @@
             pkgs.libxinerama
             pkgs.libxcursor
             pkgs.libxi
+            pkgs.clang-tools
           ];
 
           shellHook = ''
