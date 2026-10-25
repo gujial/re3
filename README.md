@@ -26,21 +26,21 @@ Compared to other branches, the reVC branch has made more changes:
 - Enabled Japanese and Polish settings options, but not yet fully implemented
 - Modified the poster when exiting
 - Fix some bugs
-   - Wrong cursor position when use functional scale multiplier in wayland
-   - Can't delete save file in Linux
+  - Wrong cursor position when use functional scale multiplier in wayland
+  - Can't delete save file in Linux
 - Some new features
-   - Save game in pause menu
-   - Save game after mission complete in standalone slot
-   - Press `F10` to turn on/off framerate limiter
-   - Reduce the sensitivity in first person view. The multiplier can be adjusted in settings.
-   - After picking up the phone. press pick-up key again to skip it
+  - Save game in pause menu
+  - Save game after mission complete in standalone slot
+  - Press `F10` to turn on/off framerate limiter
+  - Reduce the sensitivity in first person view. The multiplier can be adjusted in settings.
+  - After picking up the phone. press pick-up key again to skip it
 - Some improvments
-   - Unified vertical and horizontal sensitivity
-   - Increase follow speed of free cam
+  - Unified vertical and horizontal sensitivity
+  - Increase follow speed of free cam
 
 > Can't save game in mission or vehicle. Auto save will start after Tommy leave the vehicle.
 
-> This branch modified the script of game. Can't load original save!
+> This branch modified the script of game. Can't load original save! If you need to load original save, use original `main.scm`.
 
 The following tools/code were used during game modification, thanks to:
 
