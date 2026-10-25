@@ -66,6 +66,7 @@
               !(
                 baseName == "build"
                 || baseName == "build-clangd"
+                || baseName == "build-cmake"
                 || baseName == "local_gamefiles"
                 || baseName == ".direnv"
                 || baseName == ".git"

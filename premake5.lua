@@ -245,7 +245,7 @@ end
 
 project "reVC"
 	kind "WindowedApp"
-	targetname "reVC"
+	targetname "reVC-Improved"
 	targetdir "bin/%{cfg.platform}/%{cfg.buildcfg}"
 
 	if(_OPTIONS["with-librw"]) then
@@ -275,10 +275,9 @@ project "reVC"
 	files { addSrcFiles("src/vehicles") }
 	files { addSrcFiles("src/weapons") }
 	files { addSrcFiles("src/extras") }
+	removefiles { "src/extras/GitSHA1.cpp" } -- compiled through the custom build output
 	if(not _OPTIONS["no-git-hash"]) then
-		files { "src/extras/GitSHA1.cpp" } -- this won't be in repo in first build
-	else
-		removefiles { "src/extras/GitSHA1.cpp" } -- but it will be everytime after
+		files { "src/extras/GitSHA1.cpp.in" }
 	end
 
 	includedirs { "src" }
@@ -355,30 +354,31 @@ project "reVC"
 			-- external librw is dynamic
 			staticruntime "on"
 		end
-		if(not _OPTIONS["no-git-hash"]) then
-			prebuildcommands { '"%{prj.location}..\\printHash.bat" "%{prj.location}..\\src\\extras\\GitSHA1.cpp"' }
-		end
-
-	filter "platforms:not win*"
-		if(not _OPTIONS["no-git-hash"]) then
-			prebuildcommands { '"%{prj.location}/../printHash.sh" "%{prj.location}/../src/extras/GitSHA1.cpp"' }
-		end
+	if(not _OPTIONS["no-git-hash"]) then
+		filter "files:src/extras/GitSHA1.cpp.in"
+			-- Refresh the version source after commits and branch changes too.
+			for _, gitPath in ipairs { "HEAD", "packed-refs", "refs/heads" } do
+				local dep = os.outputof("git rev-parse --git-path " .. gitPath):gsub("%s+$", "")
+				if os.isfile(dep) then
+					buildinputs { dep }
+				elseif os.isdir(dep) then
+					buildinputs(os.matchfiles(dep .. "/**"))
+				end
+			end
+		filter { "files:src/extras/GitSHA1.cpp.in", "platforms:win*" }
+			buildcommands { '"%{prj.location}..\\printHash.bat" "%{prj.location}..\\src\\extras\\GitSHA1.cpp"' }
+			buildinputs { "printHash.bat" }
+			buildoutputs { "src/extras/GitSHA1.cpp" }
+		filter { "files:src/extras/GitSHA1.cpp.in", "platforms:not win*" }
+			buildcommands { 'sh "%{prj.location}/../printHash.sh" "%{prj.location}/../src/extras/GitSHA1.cpp"' }
+			buildinputs { "printHash.sh" }
+			buildoutputs { "src/extras/GitSHA1.cpp" }
+	end
 
 	filter "platforms:win*glfw*"
 		staticruntime "off"
 		
-	filter "platforms:*glfw*"
-		premake.modules.autoconf.parameters = "-lglfw -lX11"
-		autoconfigure {
-			-- iterates all configs and runs on them
-			["dontWrite"] = function (cfg)
-				check_symbol_exists(cfg, "haveX11", "glfwGetX11Display", { "X11/Xlib.h", "X11/XKBlib.h", "GLFW/glfw3.h", "GLFW/glfw3native.h" }, "GLFW_EXPOSE_NATIVE_X11")
-				if cfg.autoconf["haveX11"] ~= nil and cfg.autoconf["haveX11"] == 1 then
-					table.insert(cfg.links, "X11")
-					table.insert(cfg.defines, "GET_KEYBOARD_INPUT_FROM_X11")
-				end
-			end
-		}
+	-- Use GLFW keyboard callbacks on both X11 and Wayland.
 
 	filter "platforms:win*oal"
 		includedirs { "vendor/openal-soft/include" }

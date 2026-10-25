@@ -68,101 +68,102 @@ Refer to [re3-flake](https://github.com/gujial/re3-flake) for installation, bina
 
 Current compatibility is the same as the original reVC, may consider extending the script system in the future.
 
-## Building from Source  
+## Building from Source
 
-> Building with Nix Flakes is recommended. Wiki links need to be accessed through the Internet Archive.
+Clone this branch and initialize the upstream submodules:
 
-When using premake, you may want to point GTA_VC_RE_DIR environment variable to GTA Vice City root folder if you want the executable to be moved there via post-build script.
-
-Clone the repository with `git clone --recursive -b miami https://github.com/GTAmodding/re3.git reVC`. Then `cd reVC` into the cloned repository.
-
-<details><summary>Linux</summary>
-
-1. Ensure you have the required dependencies installed
-2. Run premake to generate build files:
-   ```bash
-   ./premake5Linux --with-librw gmake2
-   ```
-3. Build the project (choose one):
-   ```bash
-   cd build
-   make -j5 config=debug_linux-amd64-librw_gl3_glfw-oal     # Debug build
-   make -j5 config=release_linux-amd64-librw_gl3_glfw-oal   # Release build
-   ```
-
-For detailed setup instructions, see: [Building on Linux](https://github.com/GTAmodding/re3/wiki/Building-on-Linux)
-
-</details>
-
-<details><summary>macOS</summary>
-
-1. Ensure you have the required dependencies installed
-2. Run premake to generate build files:
-   ```bash
-   premake5 --with-librw gmake2
-   ```
-3. Build the project (choose one):
-   ```bash
-   cd build
-   make -j5 config=debug_macosx-amd64-librw_gl3_glfw-oal     # Debug build
-   make -j5 config=release_macosx-amd64-librw_gl3_glfw-oal   # Release build
-   ```
-
-For detailed setup instructions, see: [Building on macOS](https://github.com/GTAmodding/re3/wiki/Building-on-MacOS)
-
-</details>
-
-<details><summary>Nix/NixOS</summary>
-
-reVC provides a `flake.nix` for building with Nix. You have two options:
-
-**Option 1: Build in a development shell:**
 ```bash
-nix flake update  # Update flake inputs if needed
-nix develop       # Enter development shell with all dependencies
-# Then run the build commands as described in Linux section above
+git clone --recurse-submodules -b miami-improve https://github.com/gujial/re3.git
+cd re3
+# For an existing checkout:
+git submodule update --init --recursive
 ```
 
-**Option 2: Build directly with Nix flakes:**
+On Nix/NixOS, run `nix develop` to get the compiler and dependencies before
+using either local build method below. On other systems, install a C/C++
+compiler, Make, CMake, pkg-config, OpenGL, GLFW, GLEW, OpenAL, mpg123 and
+libsndfile development packages (plus X11 development dependencies on Linux).
+
+### CMake (Linux/macOS)
+
 ```bash
-nix build .#re3-vc       # Build GTA Vice City (miami branch)
+cmake -S . -B build-cmake \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DREVC_VENDORED_LIBRW=ON \
+  -DREVC_AUDIO=OAL \
+  -DLIBRW_PLATFORM=GL3 \
+  -DLIBRW_GL3_GFXLIB=GLFW
+cmake --build build-cmake --parallel 8
 ```
 
-The built binaries will be in `./result/bin/`
+The executable is `build-cmake/src/reVC-Improved`. Set
+`CMAKE_BUILD_TYPE=Release` for a release build. Keep the CMake build directory
+separate from Premake's `build/`. For clangd, see [the configuration guide](docs/clangd.zh_CN.md);
+`bash utils/configure-clangd.sh` configures the same backend in `build-clangd/`.
 
-</details>
+### Premake (Linux/macOS)
 
-### Quick Build Reference
+On Linux:
 
-**Linux Debug:**
 ```bash
-./premake5Linux --with-librw gmake2 && cd build && make -j5 config=debug_linux-amd64-librw_gl3_glfw-oal verbose=1
+./premake5Linux --with-librw gmake2
+make -C build -j8 config=debug_linux-amd64-librw_gl3_glfw-oal
+# Release:
+make -C build -j8 config=release_linux-amd64-librw_gl3_glfw-oal
 ```
 
-**Linux Release:**
+The debug executable is
+`bin/linux-amd64-librw_gl3_glfw-oal/Debug/reVC-Improved`;
+the release executable is in the corresponding `Release/` directory.
+On macOS, use `premake5` instead of `./premake5Linux` and choose the generated
+platform configuration (for Intel Macs, replace `linux-amd64` with `macosx-amd64`).
+The Premake project name remains `reVC`, but the executable is `reVC-Improved`.
+Regenerate build files after updating this repository. When upgrading from the
+old X11 input configuration, add `-B` to the first `make` command to rebuild
+objects with the new compiler flags. The Git version source
+is generated automatically, including during the first parallel build.
+Both build methods use GLFW keyboard callbacks for X11 and Wayland.
+
+`--with-lto` enables link-time optimization. `--no-git-hash` disables the
+embedded commit identifier. `GTA_VC_RE_DIR` can select the game's output
+location through Premake's post-build configuration.
+
+### Nix package build
+
 ```bash
-./premake5Linux --with-librw gmake2 && cd build && make -j5 config=release_linux-amd64-librw_gl3_glfw-oal verbose=1
+nix build .#reVC-Improved
+# Or build the debug package:
+nix build .#reVC-Improved-debug
 ```
 
-**macOS Debug:**
+The executable is `result/bin/reVC-Improved`; bundled resources are in
+`result/share/reVC-Improved/`. Nix uses the upstream commits pinned in
+`flake.lock`, aligned with the Git submodules. Updating dependencies is optional;
+do not run `nix flake update` just to build.
+
+### Running the game
+
+You need the original GTA Vice City game assets. Copy the contents of this
+repository's `gamefiles/` into your game directory, merging directories and
+replacing the corresponding files (back up existing files first). For a Nix
+package, use `result/share/reVC-Improved/` as the source of these bundled files.
+
+Launch with the game directory as the working directory. For example, with
+assets prepared in `local_gamefiles/`, choose one executable:
+
 ```bash
-premake5 --with-librw gmake2 && cd build && make -j5 config=debug_macosx-amd64-librw_gl3_glfw-oal verbose=1
+cd local_gamefiles
+../build-cmake/src/reVC-Improved
+# Or:
+../bin/linux-amd64-librw_gl3_glfw-oal/Debug/reVC-Improved
+# Or:
+../result/bin/reVC-Improved
 ```
 
-**macOS Release:**
-```bash
-premake5 --with-librw gmake2 && cd build && make -j5 config=release_macosx-amd64-librw_gl3_glfw-oal verbose=1
-```
-
-### Build Options
-
-> :information_source: premake has an `--with-lto` option if you want the project to be compiled with Link Time Optimization.
-
-> :information_source: There are various settings in [config.h](https://github.com/GTAmodding/re3/tree/miami/src/core/config.h), you may want to take a look there.
-
-> :information_source: reVC uses completely homebrew RenderWare-replacement rendering engine; [librw](https://github.com/aap/librw/). librw comes as submodule of re3, but you also can use LIBRW environment variable to specify path to your own librw.
-
-If you feel the need, you can also use CodeWarrior 7 to compile reVC using the supplied codewarrior/reVC.mcp project - this requires the original RW34 libraries, and the DX8 SDK. The build is unstable compared to the MSVC builds though, and is mostly meant to serve as a reference.
+The engine does not automatically search the repository's `gamefiles/` or the
+Nix package's share directory. Build settings can be customized in
+[`src/core/config.h`](src/core/config.h).
 
 ## Contributing
 

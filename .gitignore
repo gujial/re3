@@ -367,3 +367,5 @@ local_gamefiles/
 /build-clangd/
 /compile_commands.json
 /.cache/clangd/
+
+/build-cmake/

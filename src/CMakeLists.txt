@@ -2,6 +2,8 @@ find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 file(GLOB_RECURSE ${PROJECT}_SOURCES "*.cpp" "*.h" "*.rc")
+# Premake generates its version file in the source tree; CMake uses its own.
+list(REMOVE_ITEM ${PROJECT}_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/extras/GitSHA1.cpp")
 
 function(header_directories RETURN_LIST)
     file(GLOB_RECURSE ALL_SRCS *.h *.cpp *.c)
@@ -139,21 +141,7 @@ else()
     set(${PROJECT}_C_CXX_EXTENSIONS OFF)
 endif()
 
-if(LIBRW_PLATFORM_GL3 AND LIBRW_GL3_GFXLIB STREQUAL "GLFW")
-	include(CheckSymbolExists)
-
-	set(CMAKE_REQUIRED_LIBRARIES glfw)
-	set(CMAKE_REQUIRED_DEFINITIONS -DGLFW_EXPOSE_NATIVE_X11)
-	check_symbol_exists(glfwGetX11Display "GLFW/glfw3.h;GLFW/glfw3native.h" GLFW_HAS_X11)
-	unset(CMAKE_REQUIRED_DEFINITIONS)
-	unset(CMAKE_REQUIRED_LIBRARIES)
-
-	if (GLFW_HAS_X11)
-		find_package(X11 REQUIRED)
-		target_link_libraries(${EXECUTABLE} PRIVATE X11::X11)
-		target_compile_definitions(${EXECUTABLE} PRIVATE GET_KEYBOARD_INPUT_FROM_X11)
-	endif (GLFW_HAS_X11)
-endif()
+# Use GLFW keyboard callbacks on both X11 and Wayland.
 
 set_target_properties(${EXECUTABLE}
     PROPERTIES
