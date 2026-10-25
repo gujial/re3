@@ -44,6 +44,15 @@ newoption {
 
 require("autoconf")
 
+-- Visual Studio needs this generated source to exist when Premake emits projects.
+if(not _OPTIONS["no-git-hash"]) then
+	if os.host() == "windows" then
+		os.execute('cmd /c printHash.bat src\\extras\\GitSHA1.cpp')
+	else
+		os.execute('sh printHash.sh src/extras/GitSHA1.cpp')
+	end
+end
+
 if(_OPTIONS["with-librw"]) then
 	Librw = "vendor/librw"
 else
@@ -275,9 +284,10 @@ project "reVC"
 	files { addSrcFiles("src/vehicles") }
 	files { addSrcFiles("src/weapons") }
 	files { addSrcFiles("src/extras") }
-	removefiles { "src/extras/GitSHA1.cpp" } -- compiled through the custom build output
 	if(not _OPTIONS["no-git-hash"]) then
-		files { "src/extras/GitSHA1.cpp.in" }
+		files { "src/extras/GitSHA1.cpp" }
+	else
+		removefiles { "src/extras/GitSHA1.cpp" }
 	end
 
 	includedirs { "src" }
@@ -355,24 +365,10 @@ project "reVC"
 			staticruntime "on"
 		end
 	if(not _OPTIONS["no-git-hash"]) then
-		filter "files:src/extras/GitSHA1.cpp.in"
-			-- Refresh the version source after commits and branch changes too.
-			for _, gitPath in ipairs { "HEAD", "packed-refs", "refs/heads" } do
-				local dep = os.outputof("git rev-parse --git-path " .. gitPath):gsub("%s+$", "")
-				if os.isfile(dep) then
-					buildinputs { dep }
-				elseif os.isdir(dep) then
-					buildinputs(os.matchfiles(dep .. "/**"))
-				end
-			end
-		filter { "files:src/extras/GitSHA1.cpp.in", "platforms:win*" }
-			buildcommands { '"%{prj.location}..\\printHash.bat" "%{prj.location}..\\src\\extras\\GitSHA1.cpp"' }
-			buildinputs { "printHash.bat" }
-			buildoutputs { "src/extras/GitSHA1.cpp" }
-		filter { "files:src/extras/GitSHA1.cpp.in", "platforms:not win*" }
-			buildcommands { 'sh "%{prj.location}/../printHash.sh" "%{prj.location}/../src/extras/GitSHA1.cpp"' }
-			buildinputs { "printHash.sh" }
-			buildoutputs { "src/extras/GitSHA1.cpp" }
+		filter "platforms:win*"
+			prebuildcommands { '"%{prj.location}..\\printHash.bat" "%{prj.location}..\\src\\extras\\GitSHA1.cpp"' }
+		filter "platforms:not win*"
+			prebuildcommands { 'sh "%{prj.location}/../printHash.sh" "%{prj.location}/../src/extras/GitSHA1.cpp"' }
 	end
 
 	filter "platforms:win*glfw*"
