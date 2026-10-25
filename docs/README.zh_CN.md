@@ -11,6 +11,7 @@
 - 移除了 canon 构建
 - 增加了 nix flake 构建和打包
 - 修复 workflows 使它们可以正常工作
+- 尽可能启用 ps2 特性和移动版特性
 
 为了方便在 NixOS 上安装和运行游戏，在 [re3-falke](https://github.com/gujial/re3-flake) 中编写了对应的 Nix 包装器。
 

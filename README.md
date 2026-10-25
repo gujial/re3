@@ -11,6 +11,7 @@ This repository makes the following changes to the original re3 repository:
 - Removed canon build
 - Added nix flake build and packaging
 - Fixed workflows to make them work properly
+- Enable ps2 and mobile edition features as many as possible.
 
 For easy installation and running on NixOS, a Nix wrapper has been written in [re3-flake](https://github.com/gujial/re3-flake).
 
