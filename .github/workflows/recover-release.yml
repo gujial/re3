@@ -1,0 +1,74 @@
+name: Recover tagged release assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag whose successful build artifacts should be attached
+        required: true
+        type: string
+        default: v1.0.0
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Find and download artifacts for the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          if [[ ! "$TAG_NAME" =~ ^v[[:alnum:]._-]+$ ]]; then
+            echo "Invalid version tag: $TAG_NAME"
+            exit 1
+          fi
+
+          tag_ref=$(gh api "repos/$GH_REPO/git/ref/tags/$TAG_NAME")
+          tag_sha=$(jq -r '.object.sha' <<< "$tag_ref")
+          if [ "$(jq -r '.object.type' <<< "$tag_ref")" = tag ]; then
+            tag_sha=$(gh api "repos/$GH_REPO/git/tags/$tag_sha" --jq '.object.sha')
+          fi
+
+          mkdir -p recovered/nix recovered/windows recovered/switch
+          for spec in \
+            "build-nix-flake.yml nix" \
+            "reVC_msvc_amd64.yml windows" \
+            "build-switch.yml switch"; do
+            read -r workflow destination <<< "$spec"
+            runs=$(gh api "repos/$GH_REPO/actions/workflows/$workflow/runs?head_sha=$tag_sha&per_page=100")
+            run_id=$(jq -r --arg sha "$tag_sha" '
+              [.workflow_runs[] | select(.head_sha == $sha and .event == "push" and .status == "completed")]
+              | sort_by(.run_started_at) | last | .id // empty
+            ' <<< "$runs")
+            if [ -z "$run_id" ]; then
+              echo "No completed $workflow run found for $TAG_NAME"
+              exit 1
+            fi
+            gh run download "$run_id" --repo "$GH_REPO" --dir "recovered/$destination"
+          done
+
+          nix_count=$(find recovered/nix -type f -name '*.tar.gz' | wc -l)
+          windows_count=$(find recovered/windows -type f -name '*.zip' | wc -l)
+          switch_count=$(find recovered/switch -type f -name '*.tar.xz' | wc -l)
+          if [ "$nix_count" -ne 3 ] || [ "$windows_count" -ne 6 ] || [ "$switch_count" -ne 1 ]; then
+            echo "Expected 3 Nix, 6 Windows, 1 Switch package; found $nix_count, $windows_count, $switch_count"
+            exit 1
+          fi
+
+      - name: Attach packages and publish the existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          for pattern in '*.tar.gz' '*.zip' '*.tar.xz'; do
+            while IFS= read -r -d '' asset; do
+              gh release upload "$TAG_NAME" "$asset" --clobber
+            done < <(find recovered -type f -name "$pattern" -print0)
+          done
+          gh release edit "$TAG_NAME" --draft=false

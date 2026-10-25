@@ -29,6 +29,7 @@ jobs:
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
           if ! gh release view "$TAG_NAME" >/dev/null 2>&1; then
@@ -45,6 +46,7 @@ jobs:
       - name: Publish after all platform builds succeed
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG_NAME: ${{ github.event.workflow_run.head_branch }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           REPOSITORY: ${{ github.repository }}
