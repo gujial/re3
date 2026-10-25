@@ -160,6 +160,8 @@
             Type=Application
             Categories=Game;
             Terminal=false
+            PrefersNonDefaultGPU=true
+            X-KDE-RunOnDiscreteGpu=true
             EOF
           '';
 
