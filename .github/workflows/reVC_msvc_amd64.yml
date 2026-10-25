@@ -7,11 +7,10 @@ on:
       - 'docs/**'
   push:
     branches: [miami-improve]
+    tags: ['v*']
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -19,7 +18,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'release' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   build:
@@ -28,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ fromJSON((github.event_name == 'release' || github.event_name == 'workflow_dispatch') && '["win-amd64-librw_d3d9-oal","win-amd64-librw_gl3_glfw-oal","win-x86-librw_d3d9-mss","win-x86-librw_gl3_glfw-mss","win-x86-librw_d3d9-oal","win-x86-librw_gl3_glfw-oal"]' || '["win-amd64-librw_d3d9-oal","win-amd64-librw_gl3_glfw-oal"]') }}
+        platform: ${{ fromJSON((startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && '["win-amd64-librw_d3d9-oal","win-amd64-librw_gl3_glfw-oal","win-x86-librw_d3d9-mss","win-x86-librw_gl3_glfw-mss","win-x86-librw_d3d9-oal","win-x86-librw_gl3_glfw-oal"]' || '["win-amd64-librw_d3d9-oal","win-amd64-librw_gl3_glfw-oal"]') }}
         buildtype: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["Debug","Release","Vanilla"]' || '["Release"]') }}
         exclude:
           - platform: win-amd64-librw_d3d9-oal
@@ -78,9 +77,43 @@ jobs:
             Copy-Item "vendor/mpg123/dist/$env:DLL_ARCH/libmpg123-0.dll" package/
             Copy-Item "vendor/openal-soft/dist/$env:DLL_ARCH/OpenAL32.dll" package/
           }
+          Compress-Archive -Path package/* -DestinationPath "reVC-Improved-$env:PLATFORM-$env:BUILD_TYPE.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: reVC-Improved-${{ matrix.platform }}-${{ matrix.buildtype }}
-          path: package/
+          path: |
+            package/
+            reVC-Improved-${{ matrix.platform }}-${{ matrix.buildtype }}.zip
           if-no-files-found: error
           retention-days: 14
+
+  upload-release-assets:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: reVC-Improved-*-Release
+          path: release-assets
+      - name: Wait for draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          attempt=0
+          until gh release view "$TAG_NAME" >/dev/null 2>&1 || [ "$attempt" -ge 60 ]; do
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          gh release view "$TAG_NAME" >/dev/null
+      - name: Upload Windows packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          while IFS= read -r -d '' asset; do
+            gh release upload "$TAG_NAME" "$asset" --clobber
+          done < <(find release-assets -type f -name '*.zip' -print0)

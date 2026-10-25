@@ -1,0 +1,63 @@
+name: Create tagged release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_run:
+    workflows:
+      - Nix Flake Build
+      - Windows Premake Build
+      - Nintendo Switch CMake Build
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: create-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  create-release:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release create "$TAG_NAME" --draft --generate-notes --title "$TAG_NAME"
+          fi
+
+  publish-release:
+    if: github.event_name == 'workflow_run' && startsWith(github.event.workflow_run.head_branch, 'v') && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Publish after all platform builds succeed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          runs=$(gh api "repos/$REPOSITORY/actions/runs?head_sha=$HEAD_SHA&per_page=100")
+          for workflow in "Nix Flake Build" "Windows Premake Build" "Nintendo Switch CMake Build"; do
+            conclusion=$(jq -r --arg name "$workflow" --arg tag "$TAG_NAME" '
+              [.workflow_runs[] | select(.name == $name and .event == "push" and .head_branch == $tag)]
+              | sort_by(.run_started_at) | last | .conclusion // "missing"
+            ' <<< "$runs")
+            if [ "$conclusion" != success ]; then
+              echo "$workflow for $TAG_NAME is $conclusion; leaving the release as a draft."
+              exit 0
+            fi
+          done
+          gh release edit "$TAG_NAME" --draft=false

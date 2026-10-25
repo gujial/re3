@@ -7,11 +7,10 @@ on:
       - 'docs/**'
   push:
     branches: [miami-improve]
+    tags: ['v*']
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -19,7 +18,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'release' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   build:
@@ -28,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: ${{ fromJSON((github.event_name == 'release' || github.event_name == 'workflow_dispatch') && '[{"system":"x86_64-linux","runner":"ubuntu-24.04"},{"system":"aarch64-linux","runner":"ubuntu-24.04-arm"},{"system":"aarch64-darwin","runner":"macos-15"}]' || '[{"system":"x86_64-linux","runner":"ubuntu-24.04"}]') }}
+        target: ${{ fromJSON((startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch') && '[{"system":"x86_64-linux","runner":"ubuntu-24.04"},{"system":"aarch64-linux","runner":"ubuntu-24.04-arm"},{"system":"aarch64-darwin","runner":"macos-15"}]' || '[{"system":"x86_64-linux","runner":"ubuntu-24.04"}]') }}
         variant: ${{ fromJSON(github.event_name == 'workflow_dispatch' && '["Release","Debug"]' || '["Release"]') }}
     steps:
       # Nix obtains dependencies from flake.lock, not the local submodules.
@@ -58,9 +57,43 @@ jobs:
           mkdir package
           cp result-ci/bin/reVC-Improved package/
           cp -r result-ci/share/reVC-Improved/. package/
+          tar -czf "reVC-Improved-${{ matrix.target.system }}-${{ matrix.variant }}.tar.gz" -C package .
       - uses: actions/upload-artifact@v4
         with:
           name: reVC-Improved-${{ matrix.target.system }}-${{ matrix.variant }}
-          path: package/
+          path: |
+            package/
+            reVC-Improved-${{ matrix.target.system }}-${{ matrix.variant }}.tar.gz
           if-no-files-found: error
           retention-days: 14
+
+  upload-release-assets:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: reVC-Improved-*-Release
+          path: release-assets
+      - name: Wait for draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          attempt=0
+          until gh release view "$TAG_NAME" >/dev/null 2>&1 || [ "$attempt" -ge 60 ]; do
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          gh release view "$TAG_NAME" >/dev/null
+      - name: Upload Nix packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          while IFS= read -r -d '' asset; do
+            gh release upload "$TAG_NAME" "$asset" --clobber
+          done < <(find release-assets -type f -name '*.tar.gz' -print0)

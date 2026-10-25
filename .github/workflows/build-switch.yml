@@ -1,8 +1,8 @@
 name: Nintendo Switch CMake Build
 
 on:
-  release:
-    types: [published]
+  push:
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -10,7 +10,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'release' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   build-nintendo-switch:
@@ -33,3 +33,31 @@ jobs:
           path: build/*.tar.xz
           if-no-files-found: error
           retention-days: 14
+
+  upload-release-assets:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-nintendo-switch
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: reVC-Improved-switch-gl3-Release
+          path: release-assets
+      - name: Wait for draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          attempt=0
+          until gh release view "$TAG_NAME" >/dev/null 2>&1 || [ "$attempt" -ge 60 ]; do
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+          gh release view "$TAG_NAME" >/dev/null
+      - name: Upload Switch package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: gh release upload "$TAG_NAME" release-assets/*.tar.xz --clobber
