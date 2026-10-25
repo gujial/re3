@@ -59,7 +59,7 @@ Subsequent modifications will continue to focus on the miami branch.
 
 ### For non-NixOS systems
 
-Prepare the original game files, then find the required version archive in Actions, and copy all files to the original game folder.
+Prepare the original game files, then find the required version archive in Actions or Releases, and copy all files to the original game folder.
 
 ### For NixOS and other systems using Nix package manager
 
